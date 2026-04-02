@@ -6,3 +6,4 @@ openpyxl
 pytesseract
 Pillow
 python-dotenv
+flask-cors
