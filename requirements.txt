@@ -4,3 +4,5 @@ pandas
 numpy
 openpyxl
 pytesseract
+Pillow
+python-dotenv
