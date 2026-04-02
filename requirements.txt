@@ -12,3 +12,4 @@ PyPDF2
 python-docx
 groq
 fpdf
+pycryptodome
