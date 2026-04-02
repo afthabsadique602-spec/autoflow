@@ -11,3 +11,4 @@ matplotlib
 PyPDF2
 python-docx
 groq
+fpdf
