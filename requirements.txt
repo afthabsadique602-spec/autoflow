@@ -10,3 +10,4 @@ flask-cors
 matplotlib
 PyPDF2
 python-docx
+groq
