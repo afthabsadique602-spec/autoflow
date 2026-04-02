@@ -14,10 +14,6 @@ def summarize_text(input_source, get_ai_summary_fn):
             reader = PdfReader(input_source)
             text = " ".join([p.extract_text() for p in reader.pages])
             detected_type = "PDF Document"
-        elif ext in ['jpg', 'png']:
-            # OCR would go here (keeping placeholder logic for now)
-            text = "Image content extracted..."
-            detected_type = "Image (OCR)"
         elif ext == 'txt':
             with open(input_source, 'r', encoding='utf-8') as f:
                 text = f.read()

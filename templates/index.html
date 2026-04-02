@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoFlow - Data Automation Suite</title>
+    <title>AutoFlow Professional</title>
+    <link rel="manifest" href="/static/manifest.json?v=1775168000">
+    <meta name="theme-color" content="#38bdf8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -30,8 +32,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Inter', sans-serif; 
-            background: var(--bg-dark); 
-            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%);
+            background: #020617 url('/static/wallpaper.png') no-repeat center center fixed;
+            background-size: cover;
             color: var(--text-main); 
             height: 100vh; 
             overflow: hidden; 
@@ -41,23 +43,41 @@
 
         /* Sidebar */
         .sidebar { width: 280px; background: rgba(0,0,0,0.4); backdrop-filter: blur(20px); padding: 40px 24px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .logo { 
-            font-family: 'Outfit', sans-serif; 
-            font-size: 1.8rem; 
-            font-weight: 800; 
-            background: var(--grad-blue); 
-            -webkit-background-clip: text; 
-            background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            margin-bottom: 50px; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 50px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-left: 10px;
+        }
+        .logo-text {
+            background: linear-gradient(135deg, #fff 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .menu-item { padding: 16px 20px; margin-bottom: 12px; border-radius: 14px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 14px; color: var(--text-dim); font-weight: 600; border: 1px solid transparent; }
         .menu-item i { font-size: 1.2rem; }
         .menu-item:hover { background: rgba(255,255,255,0.05); color: white; transform: translateX(5px); }
         .menu-item.active { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: var(--accent-blue); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+
 
         /* Main Content */
         .main { flex: 1; padding: 50px; overflow-y: auto; scroll-behavior: smooth; }
@@ -273,9 +293,61 @@
             to { transform: translateX(100%); opacity: 0; }
         }
         .toast i { color: var(--accent-blue); font-size: 1.1rem; }
+
+        /* Custom Loading Screen */
+        #loading-screen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: #0b0f1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .loading-title {
+            font-style: italic;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-family: 'Outfit', sans-serif;
+            background: var(--grad-blue);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .custom-loader {
+            border: 4px solid #222;
+            border-top: 4px solid #4fc3f7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: custom-spin 1s linear infinite;
+        }
+        .loading-footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 12px;
+            opacity: 0.6;
+            color: var(--text-dim);
+        }
+        @keyframes custom-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+
+<div id="loading-screen">
+    <img src="/static/icon-192.png" style="width: 100px; height: 100px; border-radius: 24px; margin-bottom: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 30px rgba(56, 189, 248, 0.2);">
+    <h1 class="loading-title">AutoFlow</h1>
+    <div class="custom-loader"></div>
+    <p class="loading-footer">powered by kalarifeild</p>
+</div>
 
 <div id="toast-container"></div>
 
@@ -310,7 +382,11 @@
 <div class="container">
     <!-- Sidebar -->
     <div class="sidebar">
-        <div class="logo"><i class="fas fa-bolt"></i> AutoFlow <span style="font-weight:200; opacity:0.6;">D-Clean</span></div>
+        <div class="logo">
+            <div class="status-dot"></div>
+            <span class="logo-text">AutoFlow</span>
+            <span style="font-weight:200; opacity:0.4; font-size: 0.8rem; margin-left: -5px; letter-spacing: 2px;">ULTRA</span>
+        </div>
         <div class="nav-menu">
             <div class="menu-item active" onclick="showSection('cleaner-view', this)"><i class="fas fa-broom"></i> Data Cleaner</div>
             <div class="menu-item" onclick="showSection('insight-view', this)"><i class="fas fa-chart-line"></i> Data Insights</div>
@@ -318,8 +394,12 @@
             <div style="border-top:1px solid rgba(255,255,255,0.05); margin: 15px 0 5px 0;"></div>
             <div class="menu-item" onclick="showSection('utility-view', this)"><i class="fas fa-tools"></i> File Utility</div>
         </div>
-        <div style="margin-top:auto; padding-top:20px;">
-            <button class="btn-action btn-secondary" onclick="window.location.reload()" style="width: 100%; border-radius:12px; font-size:0.9rem;"><i class="fas fa-plus"></i> New File</button>
+        <div style="margin-top:auto; padding-top:20px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn-action btn-secondary" onclick="window.location.reload()" style="width: 100%; border-radius:12px; font-size:0.9rem; height: 48px;"><i class="fas fa-plus"></i> New File</button>
+            <button id="install-btn" class="btn-action" style="width:100%; border-radius:12px; font-size:0.9rem; background:rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); color:white; height: 48px; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s ease;">
+                <img src="/static/icon-192.png" style="width: 20px; height: 20px; border-radius: 4px; filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5));">
+                <span id="install-btn-text">Install App</span>
+            </button>
         </div>
     </div>
 
@@ -544,15 +624,15 @@
         <div id="summarizer-view" class="section" style="display:none;">
             <div class="section-header">
                 <h1>Professional Summarizer</h1>
-                <p>Distill complex documents, PDFs, and images into key takeaways.</p>
+                <p>Distill complex documents, PDFs, and web links into key takeaways.</p>
             </div>
             
             <div class="card" style="padding: 20px 30px;">
                 <!-- TABS -->
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
-                    <button id="tab-btn-text" class="sum-tab active" onclick="switchSumTab('text')" style="background:none; border:none; color:white; font-size:1.1rem; cursor:pointer; font-family:'Outfit'; font-weight:700;"><i class="fas fa-align-left"></i> Text Input</button>
-                    <button id="tab-btn-file" class="sum-tab" onclick="switchSumTab('file')" style="background:none; border:none; color:var(--text-dim); font-size:1.1rem; cursor:pointer; font-family:'Outfit';"><i class="fas fa-file-alt"></i> Upload File</button>
-                    <button id="tab-btn-image" class="sum-tab" onclick="switchSumTab('image')" style="background:none; border:none; color:var(--text-dim); font-size:1.1rem; cursor:pointer; font-family:'Outfit';"><i class="fas fa-image"></i> Upload Image</button>
+                    <button id="tab-btn-text" class="sum-tab active" onclick="switchSumTab('text')" style="background:none; border:none; color:white; font-size:1.1rem; cursor:pointer; font-family:'Outfit'; font-weight:700;"><i class="fas fa-align-left"></i> Text</button>
+                    <button id="tab-btn-file" class="sum-tab" onclick="switchSumTab('file')" style="background:none; border:none; color:var(--text-dim); font-size:1.1rem; cursor:pointer; font-family:'Outfit';"><i class="fas fa-file-alt"></i> File</button>
+                    <button id="tab-btn-link" class="sum-tab" onclick="switchSumTab('link')" style="background:none; border:none; color:var(--text-dim); font-size:1.1rem; cursor:pointer; font-family:'Outfit';"><i class="fas fa-link"></i> Link</button>
                 </div>
                 
                 <!-- CONTENT AREAS -->
@@ -563,18 +643,17 @@
                 <div id="sum-tab-file" class="sum-content" style="display:none;">
                     <div class="input-card drop-zone" onclick="document.getElementById('sum-file-upload').click()" style="margin-bottom:0;">
                         <i class="fas fa-cloud-upload-alt fa-3x"></i>
-                        <p style="font-weight:700; margin-top:10px;">Drag & Drop Document (PDF, DOCX, TXT, CSV)</p>
+                        <p style="font-weight:700; margin-top:10px;">Drag & Drop Document (PDF, DOCX, TXT, CSV, XLSX)</p>
                         <p style="color:var(--text-dim); font-size:0.9rem; margin-top:5px;">Max size: 20MB</p>
                         <input type="file" id="sum-file-upload" style="display:none;" accept=".txt,.pdf,.docx,.csv,.xlsx" onchange="updateSumPreview(this)">
                     </div>
                 </div>
                 
-                <div id="sum-tab-image" class="sum-content" style="display:none;">
-                    <div class="input-card drop-zone" onclick="document.getElementById('sum-image-upload').click()" style="margin-bottom:0;">
-                        <i class="fas fa-image fa-3x"></i>
-                        <p style="font-weight:700; margin-top:10px;">Drag & Drop Image for OCR</p>
-                        <p style="color:var(--text-dim); font-size:0.9rem; margin-top:5px;">Formats: PNG, JPG, JPEG</p>
-                        <input type="file" id="sum-image-upload" style="display:none;" accept=".png,.jpg,.jpeg" onchange="updateSumPreview(this)">
+                <div id="sum-tab-link" class="sum-content" style="display:none;">
+                    <div class="card" style="background:rgba(0,0,0,0.2); border:1px dashed var(--border); padding:30px; text-align:center;">
+                        <i class="fas fa-globe fa-3x" style="color:var(--accent-blue); opacity:0.6; margin-bottom:15px;"></i>
+                        <p style="margin-bottom:15px; font-weight:600;">Summarize content from a URL</p>
+                        <input type="url" id="sum-url-input" placeholder="https://example.com/article" style="width:100%; padding:15px; background:rgba(0,0,0,0.5); border:1px solid var(--border); border-radius:10px; color:white; outline:none; font-family:inherit;">
                     </div>
                 </div>
                 
@@ -740,6 +819,78 @@
 </div>
 
 <script>
+    // LOADING SCREEN
+    window.addEventListener("load", function () {
+        const screen = document.getElementById("loading-screen");
+        if(screen) {
+            screen.style.opacity = "0";
+            setTimeout(() => screen.style.display = "none", 500);
+        }
+    });
+
+    // PWA SERVICE WORKER
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/static/service-worker.js?v=2")
+                .then(reg => {
+                    console.log("Service Worker Registered!", reg);
+                    reg.update(); // Force an update check immediately
+                })
+                .catch(err => console.error("SW Register Failed:", err));
+        });
+    }
+
+    // INSTALL BUTTON LOGIC
+    let deferredPrompt;
+    const installBtn = document.getElementById("install-btn");
+    const installBtnText = document.getElementById("install-btn-text");
+
+    // Comprehensive Status Detection
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    if (isStandalone) {
+        if(installBtn) installBtn.style.display = "none";
+        console.log("AutoFlow: Running in Standalone Mode");
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+        console.log("PWA: Install Prompt Captured");
+        e.preventDefault();
+        deferredPrompt = e;
+        if(installBtn) {
+            installBtn.style.display = "flex";
+            installBtn.style.borderColor = 'var(--accent-purple)';
+            installBtn.style.background = 'rgba(139, 92, 246, 0.2)';
+            installBtnText.innerText = "Install Now";
+        }
+    });
+
+    window.addEventListener("appinstalled", (e) => {
+        console.log("AutoFlow: Successfully installed to Home Screen");
+        showToast("AutoFlow added to your home screen!");
+        if(installBtn) installBtn.style.display = "none";
+        deferredPrompt = null;
+    });
+
+    installBtn?.addEventListener("click", () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                     console.log('User accepted the PWA prompt');
+                }
+                deferredPrompt = null;
+            });
+        } else {
+            // Already installed / Manual Action guidance
+            showToast("AutoFlow is already recognized as an app! Check your Desktop or Address Bar (top right) to launch it.");
+            installBtnText.innerText = "Open as App";
+            // Flash color to indicate it's already installed
+            installBtn.style.borderColor = 'var(--accent-green)';
+            installBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+        }
+    });
+
     let currentAnalysis = null;
     let currentTempFile = null;
     // NAVIGATION
@@ -1721,6 +1872,11 @@
 
         document.querySelectorAll('.sum-content').forEach(c => c.style.display = 'none');
         document.getElementById('sum-tab-' + tab).style.display = 'block';
+        
+        // Hide file preview if switching away from file
+        if (tab !== 'file') {
+             document.getElementById('sum-file-preview').style.display = 'none';
+        }
     }
 
     function updateSumPreview(input) {
@@ -1734,7 +1890,6 @@
 
     function clearSumFile() {
         document.getElementById('sum-file-upload').value = '';
-        document.getElementById('sum-image-upload').value = '';
         document.getElementById('sum-file-preview').style.display = 'none';
     }
 
@@ -1789,10 +1944,10 @@
             const file = document.getElementById('sum-file-upload').files[0];
             if(!file) return showError("Please upload a document file.");
             formData.append('file', file);
-        } else if (currentSumTab === 'image') {
-            const file = document.getElementById('sum-image-upload').files[0];
-            if(!file) return showError("Please upload an image file.");
-            formData.append('file', file);
+        } else if (currentSumTab === 'link') {
+            const url = document.getElementById('sum-url-input').value.trim();
+            if(!url) return showError("Please enter a valid URL.");
+            formData.append('url', url);
         }
 
         showLoader("DISTILLING KNOWLEDGE...");

@@ -3,13 +3,12 @@ gunicorn
 pandas
 numpy
 openpyxl
-pytesseract
-Pillow
 python-dotenv
 flask-cors
-matplotlib
 PyPDF2
 python-docx
 groq
 fpdf
-pycryptodome
+requests
+beautifulsoup4
+matplotlib

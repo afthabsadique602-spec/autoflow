@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 
 import PyPDF2
 import docx
-from PIL import Image
-import pytesseract
 from collections import Counter
 import re
+import requests
+from bs4 import BeautifulSoup
 
 # Modular Imports
 from ai_engine.llm import call_llm
@@ -236,6 +236,7 @@ def data_insight():
     
     try:
         print(f"[INSIGHT] SMART_HYBRID_AUTO_SCALE | Triggered")
+        processing_mode = "Standard"
         
         filepath = None
         df = None
@@ -339,10 +340,24 @@ def summarize():
     global LATEST_GENERATED_SUMMARY
     try:
         text = request.form.get("text", "")
+        url = request.form.get("url", "")
         file = request.files.get("file")
         extracted_text = ""
 
-        if file:
+        if url:
+             try:
+                 resp = requests.get(url, timeout=10)
+                 if resp.status_code == 200:
+                     soup = BeautifulSoup(resp.text, 'html.parser')
+                     # Remove script and style elements
+                     for script in soup(["script", "style"]):
+                         script.extract()
+                     extracted_text = soup.get_text(separator=' ', strip=True)
+             except Exception as e:
+                 print(f"URL extraction failed: {e}")
+                 return jsonify({"success": False, "error": f"Could not extract content from URL: {str(e)}"})
+
+        elif file:
             filename = file.filename.lower()
             if filename.endswith('.txt'):
                 extracted_text = file.read().decode('utf-8', errors='ignore')
@@ -360,11 +375,8 @@ def summarize():
                 doc = docx.Document(file)
                 for para in doc.paragraphs:
                     extracted_text += para.text + "\n"
-            elif filename.endswith(('.png', '.jpg', '.jpeg')):
-                image = Image.open(file)
-                extracted_text = pytesseract.image_to_string(image)
 
-        final_text = text if text else extracted_text
+        final_text = text if (text and text.strip()) else extracted_text
         if not final_text or len(final_text.strip()) == 0:
             return jsonify({"success": False, "error": "No readable content found"})
 
