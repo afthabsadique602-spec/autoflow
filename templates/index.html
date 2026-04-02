@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoFlow - Data Automation Suite</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --bg-input: #0f172a;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-red: #f43f5e;
+            --accent-orange: #f59e0b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: rgba(51, 65, 85, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --grad-blue: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            --grad-green: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --grad-purple: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-dark); 
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%);
+            color: var(--text-main); 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        .container { display: flex; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; background: rgba(0,0,0,0.4); backdrop-filter: blur(20px); padding: 40px 24px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .logo { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 1.8rem; 
+            font-weight: 800; 
+            background: var(--grad-blue); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            margin-bottom: 50px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        }
+        .menu-item { padding: 16px 20px; margin-bottom: 12px; border-radius: 14px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 14px; color: var(--text-dim); font-weight: 600; border: 1px solid transparent; }
+        .menu-item i { font-size: 1.2rem; }
+        .menu-item:hover { background: rgba(255,255,255,0.05); color: white; transform: translateX(5px); }
+        .menu-item.active { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: var(--accent-blue); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+
+        /* Main Content */
+        .main { flex: 1; padding: 50px; overflow-y: auto; scroll-behavior: smooth; }
+        .section-header { margin-bottom: 40px; animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .section-header h1 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -1px; }
+        .section-header p { color: var(--text-dim); font-size: 1.1rem; }
+        
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            border-radius: 20px; 
+            border: 1px solid var(--glass-border); 
+            padding: 30px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            overflow: hidden; /* Prevent table bleed */
+        }
+        .card:hover { border-color: rgba(56, 189, 248, 0.3); }
+        
+        /* Input Grid */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
+        .input-card { 
+            border: 2px dashed var(--border); 
+            border-radius: 18px; 
+            padding: 35px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: rgba(15, 23, 42, 0.4); 
+        }
+        .input-card:hover { 
+            border-color: var(--accent-blue); 
+            background: rgba(56, 189, 248, 0.08); 
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.1);
+        }
+        .input-card i { margin-bottom: 15px; color: var(--accent-blue); }
+        .input-card input[type="text"] { width: 100%; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: white; padding: 12px 16px; border-radius: 10px; margin-top: 15px; outline: none; transition: 0.3s; }
+        .input-card input[type="text"]:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1); }
+
+        /* Buttons */
+        .btn-action { 
+            padding: 16px 32px; 
+            border-radius: 14px; 
+            border: none; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            width: 100%; 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 1.1rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .btn-primary { background: var(--grad-blue); color: #000; }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(56, 189, 248, 0.4); }
+        .btn-secondary { background: var(--grad-green); color: #000; }
+        .btn-secondary:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4); }
+        .btn-purple { background: var(--grad-purple); color: white; }
+        .btn-purple:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.4); }
+        
+        .health-score { font-size: 4rem; font-weight: 900; font-family: 'Outfit', sans-serif; line-height: 1; margin: 15px 0; background: var(--grad-blue); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2,6,23,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 60px; height: 60px; border: 6px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .table-container { 
+            width: 100%; 
+            overflow-x: auto; 
+            overflow-y: auto; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            margin-top: 15px; 
+            background: rgba(0,0,0,0.2); 
+            position: relative;
+            scrollbar-width: thin;
+            padding-bottom: 4px;
+        }
+
+        /* Custom UI Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(10px); z-index: 3000; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-card { background: var(--bg-dark); border: 1px solid var(--glass-border); border-radius: 20px; width: 550px; max-width: 90%; padding: 40px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-card h3 { color: white; display: flex; align-items: center; gap: 15px; margin-bottom: 20px; font-family: 'Outfit'; font-size: 1.8rem; font-weight: 800; }
+        .modal-card h3 i { color: var(--accent-purple); }
+        .modal-list { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); padding: 20px; border-radius: 12px; margin-bottom: 30px; max-height: 250px; overflow-y: auto; }
+        .modal-list li { margin-bottom: 12px; color: #e2e8f0; display: flex; align-items: flex-start; gap: 12px; line-height: 1.5; font-size: 0.95rem; }
+        .modal-list li i { color: var(--accent-blue); margin-top: 4px; font-size: 1.1rem; }
+        .modal-list li:last-child { margin-bottom: 0; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 15px; }
+        
+        .table-container { 
+            width: 100%; 
+            overflow-x: auto; 
+            overflow-y: auto; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            margin-top: 15px; 
+            background: rgba(0,0,0,0.2); 
+            position: relative;
+            padding-bottom: 12px; /* Prevent scrollbar cutting */
+            scrollbar-width: thin;
+        }
+        
+        .table { 
+            min-width: 1000px; 
+            width: max-content; 
+            border-collapse: collapse; 
+            font-size: 12px; /* High Density */
+        }
+        .table th { 
+            background: #0f172a; 
+            color: var(--accent-blue); 
+            text-align: left; 
+            padding: 8px 12px; 
+            border-bottom: 1px solid var(--border); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            white-space: nowrap; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            backdrop-filter: blur(8px); 
+        }
+        .table td { padding: 6px 12px; border-bottom: 1px solid var(--border); color: #cbd5e1; white-space: nowrap; }
+
+        /* Universal Custom Scrollbar Logic */
+        .table-container::-webkit-scrollbar { height: 10px !important; width: 10px !important; }
+        .table-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.1) !important; border-radius: 10px !important; }
+        .table-container::-webkit-scrollbar-thumb { background: linear-gradient(to right, #38bdf8, #8b5cf6, #f43f5e) !important; border-radius: 10px !important; border: 2px solid #0f172a !important; padding: 2px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: linear-gradient(to right, #0ea5e9, #7c3aed, #fb7185) !important; }
+        .table-container { scrollbar-color: #38bdf8 rgba(0,0,0,0.2) !important; scrollbar-width: auto !important; }
+
+        /* Right Side Fade Hint */
+        .table-container::after {
+            content: "";
+            position: sticky;
+            right: 0;
+            top: 0;
+            pointer-events: none;
+            width: 40px;
+            height: 100%;
+            background: linear-gradient(to left, rgba(2, 6, 23, 0.5), transparent);
+            z-index: 5;
+            float: right;
+        }
+        .summary-point { margin-bottom: 8px; line-height: 1.6; color: #e2e8f0; display: flex; align-items: flex-start; gap: 10px; font-size: 0.95rem; }
+        .summary-point::before { content: "-"; color: var(--accent-purple); font-weight: bold; }
+        .summary-section-title { font-family: 'Outfit'; color: var(--accent-blue); margin-top: 40px; margin-bottom: 25px; font-size: 1.6rem; font-weight: 900; border-bottom: 3px solid var(--accent-blue); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+        .summary-section-title:first-child { margin-top: 0; }
+        .summary-subheader { font-family: 'Outfit'; color: #f8fafc; margin-top: 35px; margin-bottom: 18px; font-size: 1.25rem; font-weight: 800; display: block; border-bottom: 2px solid rgba(139, 92, 246, 0.5); padding-bottom: 6px; position: relative; }
+        .summary-subheader::after { content: ""; position: absolute; bottom: -2px; left: 0; width: 60px; height: 2px; background: var(--accent-purple); box-shadow: 0 0 10px var(--accent-purple); }
+        .summary-core-box { background: rgba(56, 189, 248, 0.05); border-left: 6px solid var(--accent-blue); padding: 25px; border-radius: 4px 15px 15px 4px; margin-top: 35px; margin-bottom: 35px; }
+        .summary-core-title { font-weight: 900; color: var(--accent-blue); display: block; margin-bottom: 12px; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 2px; }
+
+        /* Standard Alert Modal */
+        .modal-error .modal-card h3 { color: var(--accent-red); font-size: 1.5rem; }
+        .modal-error .modal-card p { color: #e2e8f0; font-size: 1.05rem; }
+
+        .tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; margin-left: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tag-changed { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); border: 1px solid var(--accent-orange); }
+        
+        /* Chat Pulse Animation */
+        @keyframes chatPulse {
+            0% { opacity: 0.4; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-2px); }
+            100% { opacity: 0.4; transform: translateY(0); }
+        }
+        .chat-thinking { display: flex; gap: 4px; padding: 15px 20px; background: rgba(255,255,255,0.05); border-radius: 0 18px 18px 18px; align-self: flex-start; border: 1px solid var(--border); color: var(--text-dim); font-size: 0.9rem; font-weight: 600; font-family: 'Outfit'; }
+        .pulse-dot { width: 6px; height: 6px; background: var(--accent-blue); border-radius: 50%; display: inline-block; animation: chatPulse 1.4s infinite ease-in-out; }
+        .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
+        .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        /* Risk Panel */
+        .risk-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; margin-bottom: 10px; font-size: 0.9rem; }
+        .risk-high { background: rgba(239, 68, 68, 0.15); border-left: 4px solid var(--accent-red); color: #fecaca; }
+        .risk-medium { background: rgba(245, 158, 11, 0.15); border-left: 4px solid var(--accent-orange); color: #fde68a; }
+        .risk-safe { background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); color: #bbf7d0; }
+
+        /* Inspector */
+        .inspector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .col-card { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); padding: 22px; border-radius: 16px; transition: all 0.3s ease; }
+        .col-card:hover { border-color: var(--accent-blue); transform: translateY(-3px); background: rgba(15, 23, 42, 0.8); }
+        .col-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+        .col-badge { font-size: 0.7rem; background: var(--bg-input); padding: 4px 10px; border-radius: 6px; color: var(--accent-blue); letter-spacing: 0.5px; text-transform: uppercase; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.2); }
+        .col-stats { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 15px; line-height: 1.6; }
+        .col-controls { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.8rem; }
+        .col-controls label { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; color: var(--text-dim); }
+        .col-controls label:hover { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.05); color: white; }
+        .col-controls input[type="checkbox"] { accent-color: var(--accent-blue); width: 16px; height: 16px; }
+
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; top: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: rgba(15, 23, 42, 0.95); border: 1px solid var(--accent-blue); padding: 15px 25px; border-radius: 12px; color: white; font-family: 'Outfit'; font-weight: 700; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(56, 189, 248, 0.2); display: flex; align-items: center; gap: 12px; animation: toastSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 280px; }
+        @keyframes toastSlideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast.fade-out { animation: toastFadeOut 0.4s forwards; }
+        @keyframes toastFadeOut {
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .toast i { color: var(--accent-blue); font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="loader" id="global-loader">
+    <div class="spinner"></div>
+    <p id="loader-text" style="margin-top: 20px; font-weight: 800; letter-spacing: 3px; color: var(--accent-blue); text-transform: uppercase; font-family: 'Outfit';">SCRUTINIZING...</p>
+</div>
+
+<!-- Generic Error/Alert Modal -->
+<div class="modal-overlay modal-error" id="alert-modal" style="z-index: 4000;">
+    <div class="modal-card" style="width: 450px; padding: 30px; text-align: center; align-items: center;">
+        <i class="fas fa-exclamation-triangle fa-3x" style="color: var(--accent-red); margin-bottom: 20px;"></i>
+        <h3 style="margin-bottom: 15px; font-weight:800; font-family:'Outfit'; color:var(--accent-red);"><i class="fas fa-microchip"></i> System Message</h3>
+        <p id="alert-modal-text" style="margin-bottom: 25px; line-height: 1.6; color: white; font-weight: 500; font-size: 1.1rem;"></p>
+        <button class="btn-action btn-primary" style="padding: 10px 30px; border-radius: 8px;" onclick="document.getElementById('alert-modal').classList.remove('active'); setTimeout(()=>document.getElementById('alert-modal').style.display='none',300);">Acknowledge</button>
+    </div>
+</div>
+
+<!-- Custom Preview Modal -->
+<div class="modal-overlay" id="preview-modal">
+    <div class="modal-card">
+        <h3><i class="fas fa-magic"></i> Recommended Fixes</h3>
+        <p style="color:var(--text-dim); margin-bottom:20px; font-size: 1.05rem; line-height: 1.5;">Applying these optimizations will permanently alter your dataset. The following actions will be executed instantly:</p>
+        <ul class="modal-list" id="preview-modal-list"></ul>
+        <div class="modal-actions">
+            <button class="btn-action" style="padding: 12px 25px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border);" onclick="closePreviewModal()">Cancel</button>
+            <button class="btn-action btn-purple" style="padding: 12px 30px; border:none;" onclick="confirmSmartFix()"><i class="fas fa-check" style="margin-right: 8px;"></i> Confirm & Apply</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo"><i class="fas fa-bolt"></i> AutoFlow <span style="font-weight:200; opacity:0.6;">D-Clean</span></div>
+        <div class="nav-menu">
+            <div class="menu-item active" onclick="showSection('cleaner-view', this)"><i class="fas fa-broom"></i> Data Cleaner</div>
+            <div class="menu-item" onclick="showSection('insight-view', this)"><i class="fas fa-chart-line"></i> Data Insights</div>
+            <div class="menu-item" onclick="showSection('summarizer-view', this)"><i class="fas fa-quote-right"></i> Summarizer</div>
+            <div style="border-top:1px solid rgba(255,255,255,0.05); margin: 15px 0 5px 0;"></div>
+            <div class="menu-item" onclick="showSection('utility-view', this)"><i class="fas fa-tools"></i> File Utility</div>
+        </div>
+        <div style="margin-top:auto; padding-top:20px;">
+            <button class="btn-action btn-secondary" onclick="window.location.reload()" style="width: 100%; border-radius:12px; font-size:0.9rem;"><i class="fas fa-plus"></i> New File</button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="main">
+        <!-- 1. DATA CLEANER -->
+        <div id="cleaner-view" class="section">
+            <div class="section-header">
+                <h1>Universal Data Cleaner <span style="font-size: 0.8rem; background: var(--grad-purple); color: white; padding: 4px 10px; border-radius: 20px; vertical-align: middle; margin-left: 10px;">ULTRA</span></h1>
+                <p>Advanced algorithmic preparation for professional-grade datasets.</p>
+            </div>
+
+            <div id="clean-input-stage" class="card">
+                <div class="input-grid">
+                    <div class="input-card" onclick="document.getElementById('clean_file').click()">
+                        <i class="fas fa-cloud-upload-alt fa-3x" id="clean-file-icon" style="transition: 0.3s;"></i>
+                        <p id="clean-file-label" style="font-weight:700; margin-top:10px;">Drop dataset here or browse</p>
+                        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 5px;">Supports CSV, XLSX, XLS</p>
+                        <input type="file" id="clean_file" hidden onchange="startAnalysis()" accept=".csv, .xlsx, .xls">
+                    </div>
+                    <div class="input-card">
+                        <i class="fab fa-google-drive fa-3x" style="color:var(--accent-green);"></i>
+                        <p style="font-weight:700; margin-top:10px;">Cloud Integration</p>
+                        <input type="text" id="clean_url" placeholder="Paste Google Sheet URL..." onchange="startAnalysis()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 2: Analysis & Config -->
+            <div id="clean-analysis-stage" style="display:none;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+                    <!-- Risk Panel -->
+                    <div class="card">
+                        <h3 style="margin-bottom:25px; font-family:'Outfit'; display:flex; align-items:center; gap:15px; font-size: 1.4rem;">
+                            <i class="fas fa-shield-virus" style="color:var(--accent-purple)"></i> Data Integrity Scan
+                        </h3>
+                        <div id="risk-list"></div>
+                    </div>
+                    <!-- Health Score -->
+                    <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                        <h4 style="color:var(--text-dim); font-size: 0.9rem; font-weight: 700; letter-spacing: 2px;">QUALITY SCORE</h4>
+                        <div class="health-score" id="health-val">--</div>
+                        <p id="health-label" style="font-weight: 800; letter-spacing: 1px;"></p>
+                    </div>
+                </div>
+
+                <!-- Column Inspector -->
+                <div class="card">
+                    <h3 style="margin-bottom:25px; font-family:'Outfit'; display:flex; align-items:center; gap:15px; font-size: 1.4rem;">
+                        <i class="fas fa-microscope" style="color:var(--accent-blue)"></i> Forensic Inspector
+                    </h3>
+                    <div class="inspector-grid" id="inspector-list"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 50px;">
+                    <button class="btn-action btn-primary" onclick="handleClean('manual')"><i class="fas fa-magic"></i> Apply Custom Fixes</button>
+                    <button class="btn-action btn-purple" onclick="previewSmartFix()"><i class="fas fa-magic"></i> Apply Recommended Fixes</button>
+                </div>
+            </div>
+
+            <!-- Stage 3: Results -->
+            <div id="clean-results-stage" style="display:none; margin-top:50px; animation: slideUp 0.6s ease-out;">
+                <div class="card" style="text-align:center; padding:50px; border-top: 5px solid var(--accent-green);">
+                    <div style="font-size:3rem; color:var(--accent-green); margin-bottom:20px;"><i class="fas fa-check-circle"></i></div>
+                    <h2 style="margin-bottom:10px;">Purification Complete!</h2>
+                    <p style="color:var(--text-dim); margin-bottom:30px;">Your dataset has been refined and verified according to the forensic blueprint.</p>
+                    <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
+                        <a id="download-link" href="#" class="btn-action btn-primary" style="width:auto; padding:15px 25px;"><i class="fas fa-file-csv"></i> Download CSV</a>
+                        <a id="download-xlsx-link" href="#" class="btn-action btn-green" style="width:auto; padding:15px 25px;"><i class="fas fa-file-excel"></i> Download Excel</a>
+                        <a id="download-json-link" href="#" class="btn-action btn-purple" style="width:auto; padding:15px 25px;"><i class="fas fa-file-code"></i> Download JSON</a>
+                    </div>
+                </div>
+                <!-- Table Comparison Grid with Horizontal Scrolling -->
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(600px, 1fr)); gap: 25px; margin-top:30px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: thin; scrollbar-color: var(--accent-blue) rgba(0,0,0,0.1);">
+                    <div class="card" style="padding: 20px;">
+                        <h4 style="margin-bottom:15px; font-family: 'Outfit'; color:var(--text-dim);"><i class="fas fa-history"></i> Original State</h4>
+                        <div class="table-container" id="preview-orig" style="max-height: 400px;"></div>
+                    </div>
+                    <div class="card" style="padding: 20px; border-color: var(--accent-green);">
+                        <h4 style="margin-bottom:15px; font-family: 'Outfit'; color:var(--accent-green);"><i class="fas fa-sparkles"></i> Purified Output</h4>
+                        <div class="table-container" id="preview-final" style="max-height: 400px;"></div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:30px; border-left: 5px solid var(--accent-blue);">
+                    <h3 style="margin-bottom:15px;"><i class="fas fa-history"></i> Audit Trail</h3>
+                    <div id="audit-logs"></div>
+                </div>
+
+                <!-- FORENSIC ISSUE TABLE -->
+                <div class="card" style="margin-top:30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="color:white; margin:0;"><i class="fas fa-microscope"></i> Detailed Forensic Audit</h3>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span style="font-size:0.8rem; color:var(--text-dim);">Filter:</span>
+                            <select id="issue-filter" onchange="filterIssues()" style="background:var(--bg-dark); border:1px solid var(--border); color:white; border-radius:8px; padding:5px 10px; outline:none;">
+                                <option value="all">All Issues</option>
+                                <option value="Missing">Missing Values</option>
+                                <option value="Invalid Number">Number Format</option>
+                                <option value="Invalid Email">Email Format</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="overflow-x:auto; max-height:400px; border-radius:12px; border:1px solid var(--border);">
+                        <table class="table" style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                            <thead>
+                                <tr style="background:var(--bg-dark);">
+                                    <th style="padding:15px; text-align:left;">Row</th>
+                                    <th style="padding:15px; text-align:left;">Column</th>
+                                    <th style="padding:15px; text-align:left;">Issue</th>
+                                    <th style="padding:15px; text-align:left;">Original Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="issue-table-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. DATA INSIGHT -->
+        <div id="insight-view" class="section" style="display:none;">
+            <div class="section-header">
+                <h1>Strategic Insight Explorer <span style="font-size: 0.8rem; background: var(--grad-purple); color: white; padding: 4px 10px; border-radius: 20px; vertical-align: middle; margin-left: 10px;">ULTRA</span></h1>
+                <p>Unlock deep patterns and vectorized trends in your data.</p>
+            </div>
+            
+            <!-- Analysis Trigger -->
+            <div id="insight-input-stage" class="card">
+                <form id="insight-form" onsubmit="handleInsight(event)">
+                    <div class="input-grid">
+                        <div class="input-card" onclick="document.getElementById('insight_file').click()">
+                            <i class="fas fa-project-diagram fa-2x"></i>
+                            <p id="insight-file-label" style="font-weight:700; margin-top:10px;">Upload Dataset</p>
+                            <input type="file" id="insight_file" name="file" hidden onchange="document.getElementById('insight-file-label').innerText=this.files[0].name.slice(0,10)+'...'">
+                        </div>
+                        <div class="input-card">
+                            <i class="fab fa-google-drive fa-2x" style="color:var(--accent-green);"></i>
+                            <p style="font-weight:700; margin-top:10px;">Cloud URL</p>
+                            <input type="text" name="sheet_url" placeholder="Paste Google Sheet URL...">
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <button type="submit" class="btn-action btn-secondary" style="border-radius:12px; height:55px; font-weight:800; text-transform: none;"><i class="fas fa-rocket"></i> Run Smart Analysis</button>
+                    </div>
+                </form>
+            </div>
+
+                <div id="insight-results" style="display:none; padding-bottom: 60px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <h2 style="font-weight:900; letter-spacing:-1px; margin:0;">Intelligence Dashboard</h2>
+                            <span id="insight-mode-badge" style="font-size:0.65rem; background:rgba(56, 189, 248, 0.1); color:var(--accent-blue); padding:4px 10px; border-radius:6px; border:1px solid rgba(56, 189, 248, 0.2); font-weight:800; display:none;">STANDARD</span>
+                        </div>
+                        <button onclick="exportStrategicPDF()" class="btn-action btn-primary" style="padding:10px 20px; font-size:0.85rem; width:auto; border-radius:10px;"><i class="fas fa-file-pdf"></i> Strategic PDF Report</button>
+                    </div>
+                    <!-- 1. Dataset Snapshot -->
+                    <div id="insight-snapshot" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; margin-bottom:30px;">
+                        <div class="card" style="padding:15px; text-align:center;">
+                            <h4 style="color:var(--text-dim); font-size:0.7rem; letter-spacing:1px;">ROWS</h4>
+                            <div id="rows" style="font-size:1.5rem; font-weight:800; color:white;">--</div>
+                        </div>
+                        <div class="card" style="padding:15px; text-align:center;">
+                            <h4 style="color:var(--text-dim); font-size:0.7rem; letter-spacing:1px;">COLS</h4>
+                            <div id="cols" style="font-size:1.5rem; font-weight:800; color:white;">--</div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:30px; margin-bottom:30px;">
+                        <!-- 2. Key Insights (Markdown) -->
+                        <div class="card" style="border-left:5px solid var(--accent-blue);">
+                            <h3 style="margin-bottom:20px;"><i class="fas fa-list-ul"></i> Key Insights</h3>
+                            <div id="insights" style="margin-bottom:25px; color:white; line-height:1.8;"></div>
+                        </div>
+
+                        <!-- 3. Red Flags -->
+                        <div class="card" style="border-top:5px solid var(--accent-red);">
+                            <h3 style="margin-bottom:20px; color:var(--accent-red);"><i class="fas fa-exclamation-triangle"></i> Red Flags</h3>
+                            <ul id="flags" style="color:white; font-size:0.9rem; list-style:none; padding-left:0; line-height:1.6;"></ul>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:30px; margin-bottom:30px;">
+                        <!-- 4. Visualization -->
+                        <div class="card" style="border-top:5px solid var(--accent-purple);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <h3><i class="fas fa-chart-bar"></i> Visualizations</h3>
+                            </div>
+                            <div id="charts" style="max-height:400px; overflow-y:auto; padding:10px;">
+                                <img id="chart" src="" style="width:100%; border-radius:15px; display:none; margin-top:20px;">
+                            </div>
+                        </div>
+
+                        <!-- 5. Column Explorer -->
+                        <div class="card">
+                            <h3 style="margin-bottom:20px;"><i class="fas fa-search"></i> Column Explorer</h3>
+                            <select id="columnSelect" style="width:100%; background:var(--bg-dark); color:white; border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:20px; outline:none; font-family:inherit;"></select>
+                            
+                            <div id="columnDetails" style="margin-bottom:20px; color:var(--text-dim); line-height:1.6; font-size:0.9rem; background:rgba(255,255,255,0.03); padding:15px; border-radius:10px;"></div>
+                            
+                            <div style="height: 250px; width: 100%;">
+                                <canvas id="columnChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Data Preview -->
+                    <div class="card" style="border-bottom: 5px solid var(--accent-green);">
+                        <h3 style="margin-bottom:20px;"><i class="fas fa-table"></i> Data Preview</h3>
+                        <div class="table-container" id="preview" style="max-height: 400px; overflow-y: auto;"></div>
+                    </div>
+
+                    <div style="text-align:center; margin-top:50px;">
+                        <button onclick="generatePDF()" class="btn-action btn-secondary" style="width:auto; padding:15px 50px;"><i class="fas fa-file-pdf"></i> GENERATE STRATEGIC PDF REPORT</button>
+                    </div>
+                </div>
+        </div>
+
+        <!-- 3. TEXT SUMMARIZER -->
+        <div id="summarizer-view" class="section" style="display:none;">
+            <div class="section-header">
+                <h1>Professional Summarizer</h1>
+                <p>Distill complex documents, PDFs, and images into key takeaways.</p>
+            </div>
+            
+            <div class="card" style="padding: 20px 30px;">
+                <!-- TABS -->
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                    <button id="tab-btn-text" class="sum-tab active" onclick="switchSumTab('text')" style="background:none; border:none; color:white; font-size:1.1rem; cursor:pointer; font-family:'Outfit'; font-weight:700;"><i class="fas fa-align-left"></i> Text Input</button>
+                    <button id="tab-btn-file" class="sum-tab" onclick="switchSumTab('file')" style="background:none; border:none; color:var(--text-dim); font-size:1.1rem; cursor:pointer; font-family:'Outfit';"><i class="fas fa-file-alt"></i> Upload File</button>
+                    <button id="tab-btn-image" class="sum-tab" onclick="switchSumTab('image')" style="background:none; border:none; color:var(--text-dim); font-size:1.1rem; cursor:pointer; font-family:'Outfit';"><i class="fas fa-image"></i> Upload Image</button>
+                </div>
+                
+                <!-- CONTENT AREAS -->
+                <div id="sum-tab-text" class="sum-content">
+                    <textarea id="sum-text-input" placeholder="Paste long-form text or logs here..." style="width:100%; height:250px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:12px; color:white; padding:20px; outline:none; font-family:inherit; font-size:1rem; resize:none;"></textarea>
+                </div>
+                
+                <div id="sum-tab-file" class="sum-content" style="display:none;">
+                    <div class="input-card drop-zone" onclick="document.getElementById('sum-file-upload').click()" style="margin-bottom:0;">
+                        <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                        <p style="font-weight:700; margin-top:10px;">Drag & Drop Document (PDF, DOCX, TXT, CSV)</p>
+                        <p style="color:var(--text-dim); font-size:0.9rem; margin-top:5px;">Max size: 20MB</p>
+                        <input type="file" id="sum-file-upload" style="display:none;" accept=".txt,.pdf,.docx,.csv,.xlsx" onchange="updateSumPreview(this)">
+                    </div>
+                </div>
+                
+                <div id="sum-tab-image" class="sum-content" style="display:none;">
+                    <div class="input-card drop-zone" onclick="document.getElementById('sum-image-upload').click()" style="margin-bottom:0;">
+                        <i class="fas fa-image fa-3x"></i>
+                        <p style="font-weight:700; margin-top:10px;">Drag & Drop Image for OCR</p>
+                        <p style="color:var(--text-dim); font-size:0.9rem; margin-top:5px;">Formats: PNG, JPG, JPEG</p>
+                        <input type="file" id="sum-image-upload" style="display:none;" accept=".png,.jpg,.jpeg" onchange="updateSumPreview(this)">
+                    </div>
+                </div>
+                
+                <div id="sum-file-preview" style="display:none; margin-top: 15px; padding: 15px; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent-blue); border-radius: 10px; justify-content: space-between; align-items: center;">
+                    <div>
+                        <i class="fas fa-file-check" style="color: var(--accent-blue); margin-right: 10px;"></i>
+                        <span id="sum-preview-name" style="font-weight:700; color:white;">filename</span>
+                        <span id="sum-preview-size" style="color:var(--text-dim); font-size:0.85rem; margin-left:10px;"></span>
+                    </div>
+                    <i class="fas fa-times" style="cursor:pointer; color:var(--accent-red);" onclick="clearSumFile()"></i>
+                </div>
+                
+                <button onclick="handleSummarize()" class="btn-action btn-purple" style="margin-top:25px; width:100%;">Process Summary</button>
+            </div>
+            
+            <div id="summary-results" style="display:none; padding-bottom: 40px; animation: fadeIn 0.5s;">
+                <!-- Main Summary Card -->
+                <div class="card" style="border-color: var(--accent-purple);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h2 style="font-family:'Outfit'; color:var(--accent-purple); margin:0;"><i class="fas fa-bolt"></i> Summary</h2>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="copyToClipboard('summary-content', true)" class="btn-action" style="width:auto; padding:8px 15px; font-size:0.85rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-dim);">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <button onclick="downloadSummaryPDF_New()" class="btn-action btn-primary" style="width:auto; padding:8px 20px; font-size:0.9rem; border-radius:8px;">
+                                <i class="fas fa-file-pdf"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div id="summary-content" style="background:rgba(0,0,0,0.3); padding:20px; border-radius:12px; font-size:1.05rem; line-height:1.6; color:#e2e8f0; max-height:600px; overflow-y:auto;"></div>
+                </div>
+                
+                <div class="card" style="margin-top: 25px; border-color: var(--accent-blue);">
+                    <h3 style="font-family:'Outfit'; margin-bottom:15px; color:var(--accent-blue);"><i class="fas fa-comments"></i> Chat with Document</h3>
+                    <div id="chat-history" style="background:rgba(0,0,0,0.3); padding:25px; border-radius:14px; height:500px; overflow-y:auto; margin-bottom:20px; display:flex; flex-direction:column; gap:18px;">
+                        <div style="color:var(--text-dim); text-align:center; margin-top:auto; margin-bottom:auto;">Ask questions about your uploaded document!</div>
+                    </div>
+                    <div style="display:flex; gap:12px; align-items: stretch;">
+                        <input type="text" id="chat-input" placeholder="Ask anything about the document..." style="flex:1; background:rgba(15,23,42,0.8); border:1px solid var(--border); color:white; padding:15px 20px; border-radius:14px; outline:none; font-family:inherit; font-size:1rem; min-width: 0;">
+                        <button onclick="sendChat()" class="btn-action btn-primary" style="width: 70px; padding: 0; flex-shrink: 0; box-shadow: var(--grad-blue-glow);"><i class="fas fa-paper-plane" style="font-size: 1.2rem;"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. FILE UTILITY -->
+        <div id="utility-view" class="section" style="display:none;">
+            <div class="section-header">
+                <h1>File Strategy Utility</h1>
+                <p>Premium operations for file conversion, optimization, and structural management.</p>
+            </div>
+            
+            <div class="top-section" style="display:grid; grid-template-columns: 1fr 2fr; gap:20px;">
+                <!-- Left: Upload & Stats -->
+                <div class="source-panel" style="display:flex; flex-direction:column; gap:25px;">
+                    <div class="card" style="padding:25px;">
+                        <h3 style="margin-bottom: 20px;"><i class="fas fa-upload"></i> Source</h3>
+                        
+                        <!-- TAB HEADER -->
+                        <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; position:relative;">
+                            <button id="util-source-tab-upload" onclick="switchUtilitySource('upload')" class="active" style="display:flex; align-items:center; gap:8px; background:none; border:none; color:white; font-size:1rem; cursor:pointer; font-weight:700;"><i class="fas fa-file-upload"></i> Upload File</button>
+                            <button id="util-source-tab-url" onclick="switchUtilitySource('url')" style="display:flex; align-items:center; gap:8px; background:none; border:none; color:var(--text-dim); font-size:1rem; cursor:pointer; transition:all 0.3s;"><i class="fas fa-link"></i> Paste URL</button>
+                        </div>
+
+                        <!-- UPLOAD CONTENT -->
+                        <div id="util-source-upload">
+                            <div class="input-card drop-zone" onclick="document.getElementById('utility-file-upload').click()">
+                                <i class="fas fa-file-import fa-2x"></i>
+                                <p style="margin-top:10px; font-weight:700;">Drop File Here</p>
+                                <input type="file" id="utility-file-upload" style="display:none;" accept=".csv,.xlsx,.xls" onchange="handleUtilityUpload(this)">
+                            </div>
+                        </div>
+
+                        <!-- URL CONTENT -->
+                        <div id="util-source-url" style="display:none;">
+                            <input type="text" id="utility-url-input" placeholder="Paste direct CSV, Excel, or Google Sheets URL..." style="width:100%; height:50px; font-size:14px; background:var(--bg-dark); border:1px solid var(--border); color:white; padding:10px 15px; border-radius:8px; margin-bottom:15px; outline:none; font-family:inherit; transition:border 0.3s;" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border)'">
+                            <button onclick="fetchUtilityURL()" class="btn-action btn-primary" style="width:100%; padding:14px; font-size:0.95rem; border-radius:10px; font-weight:700; margin-bottom:10px;"><i class="fas fa-cloud-download-alt"></i> Fetch File</button>
+                            <div style="font-size:0.75rem; color:var(--text-dim); text-align:center;"><i class="fas fa-info-circle"></i> Supports CSV, Excel, and Google Sheets links</div>
+                        </div>
+                        
+                        <div id="utility-file-info" style="display:none; margin-top:20px; padding:15px; border-radius:12px; background:rgba(56, 189, 248, 0.05); border:1px solid rgba(56, 189, 248, 0.2);">
+                            <div style="font-weight:800; color:white; word-break:break-all;" id="util-file-name">filename.csv</div>
+                            <div style="margin-top:5px; font-size:0.8rem; color:var(--text-dim);" id="util-file-meta">5.2 MB | CSV</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div id="utility-quick-actions" class="card" style="display:none;">
+                        <h3 style="margin-bottom:15px;"><i class="fas fa-bolt"></i> Quick Converters</h3>
+                        <div id="utility-convert-btns" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Operations -->
+                <div class="operations-panel" style="min-width:0; display:flex; flex-direction:column; justify-content:space-between; min-height:100%; gap:20px;">
+                    <div id="utility-ops-card" class="card" style="display:none; padding: 24px; border: 1px solid rgba(99,102,241,0.2); box-shadow: 0 0 20px rgba(99,102,241,0.15); flex-grow:1; display:flex; flex-direction:column;">
+                         <h3 style="margin-bottom:20px; flex-shrink:0;"><i class="fas fa-cog"></i> Structural Operations</h3>
+                         <div style="display:flex; flex-wrap:wrap; gap:35px; flex-grow:1;">
+                             <div style="flex: 1 1 250px; min-width: 250px; display:flex; flex-direction:column; justify-content:center;">
+                                 <h4 style="color:var(--accent-blue); margin-bottom:15px; font-family:'Outfit';">Optimization</h4>
+                                 <label style="display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer; color:var(--text-dim); font-size:0.9rem;">
+                                     <input type="checkbox" id="util-opt-empty" checked style="accent-color:var(--accent-blue);"> Remove Empty Rows
+                                 </label>
+                                 <label style="display:flex; align-items:center; gap:10px; margin-bottom:20px; cursor:pointer; color:var(--text-dim); font-size:0.9rem;">
+                                     <input type="checkbox" id="util-opt-dupes" checked style="accent-color:var(--accent-blue);"> Deduplicate Data
+                                 </label>
+                                 <button onclick="performUtilityOptimize()" class="btn-action btn-primary" style="font-size:0.85rem; padding:12px; border-radius:10px; width:100%;"><i class="fas fa-wand-magic-sparkles"></i> Apply Clean</button>
+                             </div>
+                             <div class="segmentation" style="flex: 1 1 300px; min-width: 300px; border-left:1px solid var(--border); padding-left:25px; display:flex; flex-direction:column; justify-content:center;">
+                                 <h4 style="color:var(--accent-purple); margin-bottom:15px; font-family:'Outfit';">Segmentation</h4>
+                                 
+                                 <!-- SEGMENTATION TABS -->
+                                 <div style="display:flex; gap:10px; margin-bottom:15px; background:rgba(0,0,0,0.2); padding:5px; border-radius:10px; border:1px solid var(--border);">
+                                     <button id="seg-tab-row" class="btn-action" onclick="switchSegTab('row')" style="flex:1; font-size:0.75rem; padding:8px; border-radius:6px; background:var(--accent-purple); color:white; border:none; cursor:pointer;">Row Split</button>
+                                     <button id="seg-tab-col" class="btn-action" onclick="switchSegTab('col')" style="flex:1; font-size:0.75rem; padding:8px; border-radius:6px; background:none; color:var(--text-dim); border:none; cursor:pointer;">Column Split</button>
+                                 </div>
+
+                                 <!-- ROW SPLIT -->
+                                 <div id="seg-content-row">
+                                     <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:8px;">Rows per part:</div>
+                                     <input type="number" id="util-split-rows" value="1000" style="width:100%; height:45px; font-size:15px; background:var(--bg-dark); border:1px solid var(--border); color:white; padding:10px; border-radius:8px; margin-bottom:15px; outline:none; font-family:inherit;">
+                                     <button onclick="performUtilitySplit()" class="btn-action btn-purple" style="font-size:0.85rem; padding:12px; border-radius:10px; width:100%;"><i class="fas fa-scissors"></i> Split by Rows</button>
+                                 </div>
+
+                                 <!-- COLUMN SPLIT -->
+                                 <div id="seg-content-col" style="display:none;">
+                                     <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:8px;">Select columns to extract:</div>
+                                     <div id="util-col-list" style="max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:15px; display:flex; flex-direction:column; gap:8px;">
+                                         <div style="color:var(--text-dim); font-size:0.75rem; text-align:center;">Upload file to see columns</div>
+                                     </div>
+                                     <button onclick="performUtilityColumnExtract()" class="btn-action btn-purple" style="font-size:0.85rem; padding:12px; border-radius:10px; width:100%;"><i class="fas fa-columns"></i> Extract selected</button>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                    <div id="utility-output-card" class="card" style="display:none; border:2px solid var(--accent-green); background:rgba(16, 185, 129, 0.05); animation:fadeIn 0.5s;">
+                        <h3 style="color:var(--accent-green);"><i class="fas fa-check-circle"></i> Operation Complete</h3>
+                        <div id="utility-output-links" style="display:flex; flex-wrap:wrap; gap:15px; margin-top:20px;">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-section" style="margin-top: 20px;">
+                <div class="card" id="utility-preview-card" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3><i class="fas fa-eye"></i> Data Preview (Live)</h3>
+                        <span style="font-size:0.7rem; color:var(--text-dim); font-weight:800;">ACTIVE VIEWPORT</span>
+                    </div>
+                    <div id="utility-preview-container" class="table-container" style="max-height:350px; overflow:auto; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,0.2); width: 100%; position: relative; opacity: 0.95;">
+                        <!-- Table or Text populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+</div>
+
+<script>
+    let currentAnalysis = null;
+    let currentTempFile = null;
+    // NAVIGATION
+    function showSection(id, btn) {
+        document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+        btn.classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    // UTILS
+    function showLoader(text = "PROCESSING...") { 
+        document.getElementById('loader-text').innerText = text;
+        document.getElementById('global-loader').style.display = 'flex'; 
+    }
+    function hideLoader() { document.getElementById('global-loader').style.display = 'none'; }
+    
+    function showError(msg) {
+        document.getElementById('loader-text').innerText = "PROCESSING..."; // reset
+        hideLoader(); // force hide if an error occurs while loader active
+        const modal = document.getElementById('alert-modal');
+        const textElement = document.getElementById('alert-modal-text');
+        
+        // Handle empty messages with a fallback
+        textElement.innerText = msg && msg.trim() ? msg : "An unspecified system event occurred. Please check your data source and retry.";
+        
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+
+    function showToast(msg) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
+    }
+    
+    // DATA CLEANER: START ANALYSIS
+    // DATA CLEANER: START ANALYSIS
+    let utilityTempFile = null;
+
+    async function handleUtilityUpload(input) {
+        processUtilityFile(input.files[0]);
+    }
+
+    async function processUtilityFile(file) {
+        if(!file) return;
+        
+        showLoader("PRE-COMPUTING FILE STRATEGY...");
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const resp = await fetch('/file_utility/preview', { method: 'POST', body: formData });
+            const data = await resp.json();
+            
+            if(data.success) {
+                utilityTempFile = data.temp_file;
+                renderUtilityPreview(data);
+                showToast("File strategist ready");
+            } else {
+                showError(data.error);
+            }
+        } catch(err) {
+            showError("Engagement failed: " + err.message);
+        } finally {
+            hideLoader();
+        }
+    }
+
+    function switchUtilitySource(tab) {
+        document.getElementById('util-source-upload').style.display = tab === 'upload' ? 'block' : 'none';
+        document.getElementById('util-source-url').style.display = tab === 'url' ? 'block' : 'none';
+        
+        const btnUpload = document.getElementById('util-source-tab-upload');
+        const btnUrl = document.getElementById('util-source-tab-url');
+        
+        if(tab === 'upload') {
+            btnUpload.style.color = 'white';
+            btnUpload.style.fontWeight = '700';
+            btnUrl.style.color = 'var(--text-dim)';
+            btnUrl.style.fontWeight = '400';
+        } else {
+            btnUrl.style.color = 'white';
+            btnUrl.style.fontWeight = '700';
+            btnUpload.style.color = 'var(--text-dim)';
+            btnUpload.style.fontWeight = '400';
+        }
+    }
+
+    async function fetchUtilityURL() {
+        let urlInput = document.getElementById('utility-url-input').value.trim();
+        if(!urlInput) return showError("Please enter a valid file URL");
+        if(!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) return showError("URL must start with http:// or https://");
+        
+        let fname = "downloaded_file";
+        let isSheets = urlInput.includes('docs.google.com/spreadsheets/');
+        
+        if (isSheets) {
+            const sheetMatch = urlInput.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if(sheetMatch && sheetMatch[1]) {
+                const fileId = sheetMatch[1];
+                urlInput = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=csv`;
+                fname = "google_sheet.csv";
+            } else {
+                return showError("Invalid Google Sheets URL");
+            }
+        } else {
+            const lowerUrl = urlInput.split('?')[0].toLowerCase();
+            if(lowerUrl.endsWith('.csv')) fname += ".csv";
+            else if(lowerUrl.endsWith('.xlsx')) fname += ".xlsx";
+            else if(lowerUrl.endsWith('.xls')) fname += ".xls";
+            else {
+                return showError("Only CSV, Excel, and Google Sheets files supported");
+            }
+        }
+        
+        showLoader("Fetching file...");
+        try {
+            const resp = await fetch(urlInput);
+            if(!resp.ok) {
+                if (isSheets) throw new Error("This Google Sheet is not publicly accessible");
+                throw new Error(`HTTP error! status: ${resp.status}`);
+            }
+            
+            const blob = await resp.blob();
+            const file = new File([blob], isSheets ? fname : (urlInput.split('/').pop().split('?')[0] || fname), { type: blob.type || (fname.endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') });
+            
+            await processUtilityFile(file);
+        } catch(err) {
+            if (isSheets && err.message.includes("publicly accessible")) {
+               showError("This Google Sheet is not publicly accessible");
+            } else if (isSheets) {
+               showError("Unable to load spreadsheet");
+            } else {
+               showError("Unable to fetch file. Check link or permissions (CORS restriction)");
+            }
+        } finally {
+            hideLoader();
+        }
+    }
+
+    function renderUtilityPreview(data) {
+        // Show cards
+        document.getElementById('utility-file-info').style.display = 'block';
+        document.getElementById('utility-quick-actions').style.display = 'block';
+        document.getElementById('utility-preview-card').style.display = 'block';
+        document.getElementById('utility-ops-card').style.display = 'block';
+        document.getElementById('utility-output-card').style.display = 'none';
+        
+        // Fill Info
+        document.getElementById('util-file-name').innerText = data.stats.name;
+        
+        let metaText = `${data.stats.size_mb} MB | ${data.stats.extension.toUpperCase()}`;
+        if(data.sheet_names && data.sheet_names.length > 0) {
+            metaText = `Excel file detected (${data.stats.extension})\n📗 Sheet: ${data.sheet_names[0]}\n${data.stats.size_mb} MB`;
+        }
+        document.getElementById('util-file-meta').innerText = metaText;
+        
+        // Render Converters
+        const btns = document.getElementById('utility-convert-btns');
+        btns.innerHTML = "";
+        const ext = data.stats.extension.toLowerCase();
+        
+        const formats = [];
+        if(ext === '.csv') formats.push('xlsx', 'json');
+        if(ext === '.xlsx' || ext === '.xls') formats.push('csv', 'json');
+        if(ext === '.json') formats.push('csv');
+        if(ext === '.txt') formats.push('pdf');
+        
+        formats.forEach(f => {
+            const b = document.createElement('button');
+            b.className = "btn-action btn-primary";
+            b.style = "font-size:0.8rem; padding:10px; border-radius:10px; width:auto;";
+            b.innerHTML = `TO ${f.toUpperCase()}`;
+            b.onclick = () => performUtilityConvert(f);
+            btns.appendChild(b);
+        });
+        
+        // Render Preview
+        const container = document.getElementById('utility-preview-container');
+        const colList = document.getElementById('util-col-list');
+        
+        if(data.preview.type === 'table') {
+            // Populate Column Extractor
+            colList.innerHTML = "";
+            data.preview.columns.forEach(c => {
+                colList.innerHTML += `
+                    <label style="display:flex; align-items:center; gap:10px; color:white; font-size:0.85rem; cursor:pointer;">
+                        <input type="checkbox" name="util_cols" value="${c}" style="accent-color:var(--accent-purple);"> ${c}
+                    </label>
+                `;
+            });
+
+            let html = '<table class="table"><thead><tr>';
+            data.preview.columns.forEach(c => html += `<th>${c}</th>`);
+            html += '</tr></thead><tbody>';
+            data.preview.data.forEach(row => {
+                html += '<tr>';
+                data.preview.columns.forEach(c => html += `<td>${row[c] || ''}</td>`);
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        } else {
+            colList.innerHTML = '<div style="color:var(--text-dim); font-size:0.75rem; text-align:center;">N/A for non-tabular data</div>';
+            container.innerHTML = `<pre style="padding:20px; color:var(--text-dim); font-size:0.85rem; line-height:1.5;">${data.preview.content}</pre>`;
+        }
+    }
+
+    function switchSegTab(mode) {
+        document.getElementById('seg-tab-row').style.background = mode === 'row' ? 'var(--accent-purple)' : 'none';
+        document.getElementById('seg-tab-row').style.color = mode === 'row' ? 'white' : 'var(--text-dim)';
+        document.getElementById('seg-tab-col').style.background = mode === 'col' ? 'var(--accent-purple)' : 'none';
+        document.getElementById('seg-tab-col').style.color = mode === 'col' ? 'white' : 'var(--text-dim)';
+        
+        document.getElementById('seg-content-row').style.display = mode === 'row' ? 'block' : 'none';
+        document.getElementById('seg-content-col').style.display = mode === 'col' ? 'block' : 'none';
+    }
+
+    async function performUtilityColumnExtract() {
+        if(!utilityTempFile) return;
+        const selected = Array.from(document.querySelectorAll('input[name="util_cols"]:checked')).map(cb => cb.value);
+        if(selected.length === 0) {
+            showToast("Please select at least one column");
+            return;
+        }
+        
+        showLoader("EXTRACTING ARCHITECTURE...");
+        const formData = new FormData();
+        formData.append('temp_file', utilityTempFile);
+        selected.forEach(c => formData.append('columns[]', c));
+        
+        try {
+            const resp = await fetch('/file_utility/extract_columns', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if(data.success) {
+                renderUtilityOutput([{name: `Extracted Columns (${selected.length})`, url: data.download_url}]);
+                showToast("Extraction successful");
+            } else showError(data.error);
+        } catch(err) { showError(err.message); }
+        finally { hideLoader(); }
+    }
+
+    async function performUtilityConvert(target) {
+        if(!utilityTempFile) return;
+        showLoader("CONVERTING ARCHITECTURE...");
+        const formData = new FormData();
+        formData.append('temp_file', utilityTempFile);
+        formData.append('target_format', target);
+        
+        try {
+            const resp = await fetch('/file_utility/convert', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if(data.success) {
+                renderUtilityOutput([{name: `Converted to ${target.toUpperCase()}`, url: data.download_url}]);
+                showToast("Conversion successful");
+            } else showError(data.error);
+        } catch(err) { showError(err.message); }
+        finally { hideLoader(); }
+    }
+
+    async function performUtilityOptimize() {
+        if(!utilityTempFile) return;
+        showLoader("OPTIMIZING DATA STRUCTURE...");
+        const formData = new FormData();
+        formData.append('temp_file', utilityTempFile);
+        formData.append('remove_empty', document.getElementById('util-opt-empty').checked);
+        formData.append('remove_dupes', document.getElementById('util-opt-dupes').checked);
+        
+        try {
+            const resp = await fetch('/file_utility/optimize', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if(data.success) {
+                renderUtilityOutput([{name: `Optimized File`, url: data.download_url}]);
+                showToast("Optimization applied");
+            } else showError(data.error);
+        } catch(err) { showError(err.message); }
+        finally { hideLoader(); }
+    }
+
+    async function performUtilitySplit() {
+        if(!utilityTempFile) return;
+        showLoader("SEGMENTING FILE...");
+        const formData = new FormData();
+        formData.append('temp_file', utilityTempFile);
+        formData.append('rows', document.getElementById('util-split-rows').value);
+        
+        try {
+            const resp = await fetch('/file_utility/split', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if(data.success) {
+                renderUtilityOutput(data.files);
+                showToast(`Split into ${data.files.length} chunks`);
+            } else showError(data.error);
+        } catch(err) { showError(err.message); }
+        finally { hideLoader(); }
+    }
+
+    function renderUtilityOutput(files) {
+        const out = document.getElementById('utility-output-card');
+        const links = document.getElementById('utility-output-links');
+        out.style.display = 'block';
+        links.innerHTML = "";
+        
+        files.forEach(f => {
+            links.innerHTML += `<a href="${f.url}" class="btn-action btn-green" style="width:auto; padding:10px 20px; font-size:0.85rem;" target="_blank"><i class="fas fa-download"></i> ${f.name}</a>`;
+        });
+        out.scrollIntoView({behavior:'smooth'});
+    }
+
+    async function startAnalysis() {
+        const file = document.getElementById('clean_file').files[0];
+        const url = document.getElementById('clean_url').value;
+        if(!file && !url) return;
+
+        showLoader("SCRUTINIZING & PROFILING...");
+        const formData = new FormData();
+        if(file) {
+            formData.append('file', file);
+            document.getElementById('clean-file-label').innerText = file.name;
+            
+            // Dynamic Icon
+            const icon = document.getElementById('clean-file-icon');
+            if(file.name.endsWith('.csv')) {
+                icon.className = 'fas fa-file-csv fa-2x';
+                icon.style.color = 'var(--accent-blue)';
+            } else if(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                icon.className = 'fas fa-file-excel fa-2x';
+                icon.style.color = 'var(--accent-green)';
+            } else {
+                icon.className = 'fas fa-file-alt fa-2x';
+                icon.style.color = 'white';
+            }
+        }
+        if(url) formData.append('sheet_url', url);
+
+        try {
+            const resp = await fetch('/analyze', { method:'POST', body: formData });
+            const data = await resp.json();
+            
+            if(data.success) {
+                currentAnalysis = data.analysis;
+                currentTempFile = data.temp_file;
+                renderAnalysisDashboard(data.analysis);
+            } else {
+                showError(data.error);
+            }
+        } catch(err) { showError("Analysis failed: " + err); } finally { hideLoader(); }
+    }
+
+    function renderAnalysisDashboard(analysis) {
+        if (!analysis) return;
+        document.getElementById('clean-input-stage').style.display = 'none';
+
+        // Risk Panel
+        const riskList = document.getElementById('risk-list');
+        riskList.innerHTML = (analysis.risks || []).map(r => `
+            <div class="risk-item risk-${r.level}">
+                <i class="fas ${r.level === 'high' ? 'fa-exclamation-triangle' : (r.level === 'safe' ? 'fa-check-circle' : 'fa-info-circle')}"></i>
+                <span>${r.message}</span>
+            </div>
+        `).join('');
+
+        // Health Score
+        const scoreVal = document.getElementById('health-val');
+        const scoreLabel = document.getElementById('health-label');
+        const healthScore = analysis.health_score || 0;
+        scoreVal.innerText = healthScore + "%";
+        
+        let color = "";
+        let label = "";
+        if(healthScore >= 80) { label = "HEALTHY"; color = "var(--accent-green)"; }
+        else if(healthScore >= 60) { label = "NEEDS ATTENTION"; color = "var(--accent-orange)"; }
+        else { label = "CRITICAL"; color = "var(--accent-red)"; }
+        
+        scoreVal.style.color = color;
+        scoreLabel.style.color = color;
+        scoreLabel.innerText = label;
+        
+        const inspector = document.getElementById('inspector-list');
+        inspector.innerHTML = (analysis.columns || []).map(c => {
+            const issueHtml = c.issues && c.issues.length > 0 
+                ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:5px;">
+                    ${c.issues.map(iss => `<span class="tag" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); margin:0; border:1px solid var(--accent-red); font-size:0.7rem;">${iss.type}: ${iss.count}</span>`).join('')}
+                   </div>`
+                : '';
+
+            return `
+                <div class="col-card" data-col="${c.name}">
+                    <div class="col-header">
+                        <span style="color:white; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">${c.name}</span>
+                        <span class="col-badge">${c.type}</span>
+                    </div>
+                    <div class="col-stats">
+                        • Missing: ${c.missing} | Unique: ${c.unique}<br>
+                        • Recommendation: <span style="color:var(--accent-blue)">${c.suggested_fix}</span>
+                        ${issueHtml}
+                    </div>
+                    <div class="col-controls">
+                        <label title="Fill missing values">
+                            <input type="checkbox" class="fill-toggle" ${c.missing > 0 ? 'checked' : ''}> Fill
+                        </label>
+                        <select class="fill-method" style="background:var(--card-bg); border:1px solid var(--border); color:white; font-size:0.75rem; border-radius:4px; padding:2px;">
+                            <option value="mean" ${c.type==='Numeric'?'selected':''}>Mean</option>
+                            <option value="median">Median</option>
+                            <option value="mode" ${c.type!=='Numeric'?'selected':''}>Mode</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <label title="Remove outliers">
+                            <input type="checkbox" class="outlier-toggle"> Outliers
+                        </label>
+                        <label title="Trim extra spaces">
+                            <input type="checkbox" class="trim-toggle" checked> Trim
+                        </label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('clean-analysis-stage').style.display = 'block';
+        document.getElementById('clean-analysis-stage').scrollIntoView({behavior:'smooth'});
+        
+        // Populate Issues Table immediately (Pre-cleaning findings)
+        renderIssuesTable(analysis.cell_issues);
+    }
+
+    function renderIssuesTable(issues) {
+        const body = document.getElementById('issue-table-body');
+        const issueList = issues || [];
+        if(issueList.length === 0) {
+            body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--accent-green);"><i class="fas fa-check-circle"></i> No granular issues detected in the sampled rows.</td></tr>`;
+            return;
+        }
+
+        body.innerHTML = issueList.map(i => `
+            <tr>
+                <td style="padding:12px 15px; color:var(--text-dim); border-bottom:1px solid var(--border);">${i.row}</td>
+                <td style="padding:12px 15px; color:white; border-bottom:1px solid var(--border);">${i.column}</td>
+                <td style="padding:12px 15px; border-bottom:1px solid var(--border);"><span class="tag tag-changed" style="background:${i.issue==='Missing'?'rgba(239,68,68,0.2)':'rgba(245,158,11,0.2)'}; color:${i.issue==='Missing'?'var(--accent-red)':'var(--accent-orange)'}">${i.issue}</span></td>
+                <td style="padding:12px 15px; color:var(--text-dim); border-bottom:1px solid var(--border); font-family:monospace;">${i.value}</td>
+            </tr>
+        `).join('');
+    }
+
+    function filterIssues() {
+        if(!currentAnalysis) return;
+        const filter = document.getElementById('issue-filter').value;
+        const filtered = filter === 'all' 
+            ? currentAnalysis.cell_issues 
+            : currentAnalysis.cell_issues.filter(i => i.issue === filter);
+        renderIssuesTable(filtered);
+    }
+
+    function previewSmartFix() {
+        if (!currentAnalysis) return;
+        
+        let previewBullets = [];
+        let spacesTrimmed = false;
+        
+        currentAnalysis.columns.forEach(c => {
+            if (c.missing > 0 && c.suggested_fix.toLowerCase().includes('fill')) {
+                let method = c.suggested_fix.toLowerCase().includes('mean') ? 'Mean' : (c.suggested_fix.toLowerCase().includes('median') ? 'Median' : 'Mode');
+                previewBullets.push(`• Fill ${c.missing} missing '${c.name}' cells using ${method}`);
+            }
+            if (c.type !== 'Numeric') spacesTrimmed = true;
+        });
+        
+        let dupes = currentAnalysis.risks.find(r => r.message.includes("duplicate"));
+        if (dupes) {
+            let numDupes = dupes.message.split(' ')[0];
+            previewBullets.push(`• Remove ${numDupes} duplicate rows`);
+        }
+        if (spacesTrimmed) previewBullets.push(`• Trim whitespace in text columns`);
+        
+        if (previewBullets.length === 0) previewBullets.push("No recommended auto-fixes necessary (Data looks clean!)");
+        
+        const listHtml = previewBullets.map(b => `<li><i class="fas fa-arrow-right"></i><span>${b}</span></li>`).join('');
+        document.getElementById('preview-modal-list').innerHTML = listHtml;
+        
+        const modal = document.getElementById('preview-modal');
+        modal.style.display = 'flex';
+        // Small timeout to allow display:flex to apply before adding opacity for smooth transition
+        setTimeout(() => modal.classList.add('active'), 10);
+    }
+    
+    function closePreviewModal() {
+        const modal = document.getElementById('preview-modal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
+    
+    function confirmSmartFix() {
+        closePreviewModal();
+        applySmartFix();
+    }
+
+    // AI SMART FIX
+    function applySmartFix() {
+        if (!currentAnalysis) return;
+        
+        const smartSettings = {};
+        currentAnalysis.columns.forEach(c => {
+            const fix = c.suggested_fix.toLowerCase();
+            smartSettings[c.name] = {
+                fill: fix.includes('fill') ? (fix.includes('mean') ? 'mean' : (fix.includes('median') ? 'median' : 'mode')) : null,
+                dropoutliers: false,
+                strip: true // Always strip in smart mode
+            };
+        });
+
+        handleClean('smart', smartSettings);
+    }
+
+    // DATA CLEANER: EXECUTE
+    async function handleClean(mode = 'manual', smartSettings = null) {
+        const rows = currentAnalysis ? currentAnalysis.total_rows : "";
+        let hint = rows ? ` (PROCESSING ${rows.toLocaleString()} ROWS...)` : "";
+        showLoader((mode === 'smart' ? "APPLYING RECOMMENDATIONS..." : "EXECUTING CUSTOM CLEAN...") + hint);
+        
+        const file = document.getElementById('clean_file').files[0];
+        const url = document.getElementById('clean_url').value;
+        const formData = new FormData();
+        if(currentTempFile) formData.append('temp_file', currentTempFile);
+        else if(file) formData.append('file', file);
+        if(url) formData.append('sheet_url', url);
+
+        // Gather Settings
+        const settings = {
+            global: {
+                remove_duplicates: true,
+                trim_all: true
+            },
+            columns: {}
+        };
+
+        if (mode === 'manual') {
+            document.querySelectorAll('.col-card').forEach(card => {
+                const name = card.dataset.col;
+                settings.columns[name] = {
+                    fill: card.querySelector('.fill-toggle').checked ? card.querySelector('.fill-method').value : null,
+                    dropoutliers: card.querySelector('.outlier-toggle').checked,
+                    strip: card.querySelector('.trim-toggle').checked
+                };
+            });
+        } else if (smartSettings) {
+            settings.columns = smartSettings;
+        }
+
+        formData.append('settings', JSON.stringify(settings));
+
+        let resp;
+        try {
+            console.log("[PROCESS] Sending request to process...", { settings, currentTempFile });
+            resp = await fetch('/process', { method: 'POST', body: formData });
+            
+            if (!resp.ok) {
+                const errorData = await resp.json().catch(() => ({ error: "Server error" }));
+                console.error("[PROCESS] Server returned error:", errorData);
+                throw new Error(errorData.error || `HTTP ${resp.status}`);
+            }
+        } catch (err) {
+            console.error("[PROCESS] Initial fetch failed, retrying...", err);
+            // Wait 1s and retry once
+            await new Promise(r => setTimeout(r, 1000));
+            try {
+                resp = await fetch('/process', { method: 'POST', body: formData });
+                if (!resp.ok) {
+                    const errorData = await resp.json().catch(() => ({ error: "Server error" }));
+                    throw new Error(errorData.error || `HTTP ${resp.status}`);
+                }
+            } catch (retryErr) {
+                console.error("[PROCESS] FINAL Fetch catch:", retryErr);
+                showError("CRITICAL ERROR: Failed to communicate with server.\n\n" + retryErr.message + "\n\n1. Ensure the server is running on port 5002.\n2. Check browser console (F12) for network details.");
+                hideLoader();
+                return;
+            }
+        }
+
+        try {
+            const data = await resp.json();
+            if(data.success) {
+                console.log("[PROCESS] Success!", data);
+                document.getElementById('clean-results-stage').style.display = 'block';
+                document.getElementById('preview-orig').innerHTML = data.preview_before;
+                document.getElementById('preview-final').innerHTML = data.preview_after;
+                
+                const reportContent = `<ul style="padding-left:20px; color:var(--text-dim);">${data.report.map(r=>`<li style="margin-bottom:5px;">${r}</li>`).join('')}</ul>`;
+                document.getElementById('audit-logs').innerHTML = reportContent;
+                document.getElementById('download-link').href = data.download_url || '#';
+                
+                const xlsxLink = document.getElementById('download-xlsx-link');
+                if(xlsxLink) xlsxLink.href = data.excel_url || '#';
+                
+                const jsonLink = document.getElementById('download-json-link');
+                if(jsonLink) jsonLink.href = data.json_url || '#';
+                
+                // PDF generation removed
+                document.getElementById('clean-results-stage').scrollIntoView({behavior:'smooth'});
+            } else {
+                console.error("[PROCESS] Data success false:", data.error);
+                showError("Error: " + data.error);
+            }
+        } catch(err) { 
+            console.error("[PROCESS] Fetch catch:", err);
+            showError("Cleaning failed: " + err.message + "\n\nCheck console for details."); 
+        } finally { hideLoader(); }
+    }
+
+    // DATA INSIGHT
+    let lastInsightData = null;
+    let currentChart = null;
+
+    async function handleInsight(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Analyzing...`;
+        
+        showLoader("ORCHESTRATING HYBRID ANALYSIS...");
+        try {
+            const formData = new FormData(e.target);
+            if(currentTempFile) formData.append('temp_file', currentTempFile);
+            
+            const resp = await fetch('/data_insight', { method: 'POST', body: formData });
+            const data = await resp.json();
+            
+            if(data.success) {
+                lastInsightData = data;
+                
+                // Mode Badge
+                const modeBadge = document.getElementById('insight-mode-badge');
+                if(data.processing_mode && data.processing_mode !== "Standard") {
+                    modeBadge.innerText = data.processing_mode.toUpperCase();
+                    modeBadge.style.display = 'inline-block';
+                } else {
+                    modeBadge.style.display = 'none';
+                }
+
+                // Show Results Area
+                document.getElementById('insight-results').style.display = 'block';
+                document.getElementById('insight-input-stage').style.display = 'none';
+
+                // Unified Render Pipeline
+                renderSnapshot(data);
+                renderInsights(data);
+                renderRedFlags(data);
+                renderCharts(data);
+                renderEnhancedPreview(data);
+                populateColumnExplorer(data);
+
+                document.getElementById('insight-results').scrollIntoView({behavior:'smooth'});
+                showToast("Dataset context synthesized successfully.");
+            } else {
+                showError("Analysis engine failed: " + (data.error || "Internal Error"));
+            }
+        } catch(err) { 
+            console.error("[INSIGHT] Network/Server Error:", err);
+            const advisory = (err.message && err.message.toLowerCase().includes('fetch')) ? "Server overloaded or file too large. Try a smaller dataset." : err.message;
+            showError("Analysis request failed: " + advisory); 
+        } finally { 
+            hideLoader(); 
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    function renderSnapshot(data) {
+        const stats = data.stats || {};
+        document.getElementById("rows").innerHTML = stats.rows.toLocaleString();
+        document.getElementById("cols").innerHTML = stats.cols;
+        
+        // Add Sampled Badge if needed
+        if(stats.sampled) {
+             document.getElementById("rows").innerHTML += ` <span style="font-size:0.6rem; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; vertical-align:middle; color:var(--accent-orange);">SAMPLED</span>`;
+        }
+    }
+
+    function renderInsights(data) {
+        const div = document.getElementById("insights");
+        if(data.insights_md) {
+            div.innerHTML = marked.parse(data.insights_md);
+        } else {
+            div.innerHTML = `<p style="color:var(--text-dim);">Detailed pattern analysis unavailable for this dataset structure.</p>`;
+        }
+    }
+
+    function renderRedFlags(data) {
+        const ul = document.getElementById("flags");
+        const flags = data.red_flags || [];
+        
+        if(flags.length === 0) {
+            ul.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-check-circle fa-3x" style="color:var(--accent-green); opacity:0.3;"></i><p style="margin-top:10px; color:var(--accent-green);">Dataset is operationally healthy.</p></div>`;
+            return;
+        }
+
+        ul.innerHTML = flags.map(f => {
+            let color = "var(--accent-green)";
+            if(f.severity === "critical") color = "var(--accent-red)";
+            else if(f.severity === "moderate") color = "var(--accent-orange)";
+            
+            return `<li style="margin-bottom:12px; display:flex; gap:10px; align-items:start;">
+                <i class="fas fa-circle" style="color:${color}; font-size:0.6rem; margin-top:6px;"></i>
+                <span>${f.msg}</span>
+            </li>`;
+        }).join("");
+    }
+
+    function renderCharts(data) {
+        const container = document.getElementById("charts");
+        if(!data.charts || data.charts.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-dim);"><i class="fas fa-chart-area fa-3x" style="opacity:0.2;"></i><p>No visual patterns detected.</p></div>`;
+            return;
+        }
+        
+        container.innerHTML = data.charts.map(url => `
+            <div style="margin-bottom:20px; background:rgba(0,0,0,0.2); padding:15px; border-radius:15px; border:1px solid var(--border);">
+                 <img src="${url}" style="width:100%; border-radius:10px;">
+            </div>
+        `).join("");
+    }
+
+    function renderEnhancedPreview(data) {
+        const container = document.getElementById("preview");
+        const rows = data.preview || [];
+        if(rows.length === 0) {
+             container.innerHTML = `<p>No data available for preview.</p>`;
+             return;
+        }
+
+        const cols = Object.keys(rows[0]);
+        let html = `<div style="overflow-x:auto; width:100%; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,0.3);">`;
+        html += `<table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem;">`;
+        html += `<thead><tr style="background:rgba(255,255,255,0.05);">`;
+        cols.forEach(c => html += `<th style="padding:15px; border-bottom:1px solid var(--border); color:var(--accent-blue);">${c}</th>`);
+        html += `</tr></thead><tbody>`;
+        
+        rows.forEach(row => {
+            html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.02);">`;
+            cols.forEach(c => html += `<td style="padding:12px 15px; color:var(--text-dim); white-space:nowrap;">${row[c]}</td>`);
+            html += `</tr>`;
+        });
+        
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    function populateColumnExplorer(data) {
+        const select = document.getElementById("columnSelect");
+        const columns = data.columns || [];
+        
+        if(columns.length === 0) {
+            select.innerHTML = `<option value="">⚠️ No Columns Available</option>`;
+            return;
+        }
+        
+        select.innerHTML = columns.map(c => `<option value="${c}">${c}</option>`).join("");
+        
+        // AUTO TRIGGER FIRST COLUMN
+        showColumnDetails(data);
+        select.onchange = () => showColumnDetails(data);
+    }
+
+    function showColumnDetails(data) {
+        const col = document.getElementById("columnSelect").value;
+        const preview = data.preview;
+
+        const colDetails = (data.column_details || []).find(c => c.name === col) || {};
+        const colType = colDetails.type || "Unknown";
+        const missingCount = colDetails.missing || 0;
+        const uniqueCount = colDetails.unique || 0;
+
+        const values = preview.map(r => r[col]);
+
+        const numeric = values.map(v => Number(v)).filter(v => !isNaN(v));
+
+        let html = "";
+
+        if (numeric.length > 0) {
+            const avg = numeric.reduce((a,b)=>a+b,0) / numeric.length;
+            const min = Math.min(...numeric);
+            const max = Math.max(...numeric);
+
+            html = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <p><b>Type:</b> ${colType}</p>
+                    <p><b style="color:var(--accent-red)">Missing:</b> ${missingCount}</p>
+                    <p><b>Unique Values:</b> ${uniqueCount}</p>
+                    <p>Avg: ${avg.toFixed(2)}</p>
+                    <p>Min: ${min}</p>
+                    <p>Max: ${max}</p>
+                </div>
+            `;
+            
+            if (typeof drawChart === 'function') drawChart(numeric, col);
+        } else {
+            html = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <p><b>Type:</b> ${colType}</p>
+                    <p><b style="color:var(--accent-red)">Missing:</b> ${missingCount}</p>
+                    <p><b>Unique Values:</b> ${uniqueCount}</p>
+                </div>
+            `;
+            
+            const counts = {};
+            values.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+            if (typeof drawBarChart === 'function') drawBarChart(counts, col);
+        }
+
+        document.getElementById("columnDetails").innerHTML = html;
+    }
+
+    function drawChart(values, colName) {
+        const canvas = document.getElementById("columnChart");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+
+        if (currentChart) {
+            currentChart.destroy();
+        }
+
+        currentChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: values.map((_, i) => 'Row ' + (i + 1)),
+                datasets: [{
+                    label: colName + ' Values',
+                    data: values,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+
+    function drawBarChart(counts, colName) {
+        const canvas = document.getElementById("columnChart");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+
+        if (currentChart) {
+            currentChart.destroy();
+        }
+
+        const labels = Object.keys(counts).slice(0, 15); // limit to top 15
+        const data = Object.values(counts).slice(0, 15);
+
+        currentChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Frequency (' + colName + ')',
+                    data: data,
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#94a3b8', beginAtZero: true }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+
+    // 4. FIX PDF GENERATION
+    function generatePDF() {
+        if (!lastInsightData) {
+            showError("No insights found. Please analyze data first.");
+            return;
+        }
+        window.location.href = "/download_insight_pdf";
+    }
+
+    async function refreshCustomChart() {
+        const sel = document.getElementById('chart-column-select');
+        if(!sel || !sel.value) return;
+        const col = sel.value;
+        const img = document.getElementById('chart');
+        const loader = document.getElementById('chart-loader');
+
+        img.style.display = 'none';
+        loader.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append('temp_file', currentTempFile);
+        formData.append('column', col);
+
+        try {
+            const resp = await fetch('/custom_chart', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if(data.success) {
+                img.src = data.chart_url;
+                img.style.display = 'block';
+            }
+        } catch(err) { console.error(err); } finally { loader.style.display = 'none'; }
+    }
+
+    function renderColumnDetail() {
+        const sel = document.getElementById('col-detail-select');
+        const content = document.getElementById('col-detail-content');
+        if(!sel || !sel.value || !lastInsightData || !lastInsightData.columns) return;
+
+        const colName = sel.value;
+        const stats = lastInsightData.columns.find(c => c.name === colName);
+        if(!stats) return;
+        
+        let action = "No action needed";
+        if (stats.missing > 0) action = "Fill missing values in Data Cleaner";
+        else if (stats.type.includes('object') && stats.unique > 100) action = "High cardinality. Consider grouping.";
+        
+        content.innerHTML = `
+            <div style="background:var(--bg-dark); padding:10px; border-radius:8px;">
+                <label style="font-size:0.7rem; color:var(--text-dim);">TYPE</label>
+                <div style="font-weight:700;">${stats.type}</div>
+            </div>
+            <div style="background:var(--bg-dark); padding:10px; border-radius:8px;">
+                <label style="font-size:0.7rem; color:var(--text-dim);">MISSING</label>
+                <div style="font-weight:700; color:var(--accent-red);">${stats.missing}</div>
+            </div>
+            <div style="background:var(--bg-dark); padding:10px; border-radius:8px;">
+                <label style="font-size:0.7rem; color:var(--text-dim);">UNIQUE</label>
+                <div style="font-weight:700;">${stats.unique}</div>
+            </div>
+            <div style="background:var(--bg-dark); padding:10px; border-radius:8px;">
+                <label style="font-size:0.7rem; color:var(--text-dim);">SUGGESTED ACTION</label>
+                <div style="font-weight:700; font-size:0.8rem; color:var(--accent-blue);">${action}</div>
+            </div>
+        `;
+    }
+
+
+
+    // SUMMARIZER FRONTEND LOGIC
+    let currentSumTab = 'text';
+    let lastSummaryData = { summary: "", takeaways: "", keywords: [] };
+    
+    function switchSumTab(tab) {
+        currentSumTab = tab;
+        document.querySelectorAll('.sum-tab').forEach(t => {
+            t.classList.remove('active');
+            t.style.color = 'var(--text-dim)';
+            t.style.fontWeight = 'normal';
+        });
+        const activeBtn = document.getElementById('tab-btn-' + tab);
+        activeBtn.classList.add('active');
+        activeBtn.style.color = 'white';
+        activeBtn.style.fontWeight = '700';
+
+        document.querySelectorAll('.sum-content').forEach(c => c.style.display = 'none');
+        document.getElementById('sum-tab-' + tab).style.display = 'block';
+    }
+
+    function updateSumPreview(input) {
+        if(input.files && input.files[0]) {
+            const file = input.files[0];
+            document.getElementById('sum-preview-name').innerText = file.name;
+            document.getElementById('sum-preview-size').innerText = "(" + (file.size / (1024*1024)).toFixed(2) + " MB)";
+            document.getElementById('sum-file-preview').style.display = 'flex';
+        }
+    }
+
+    function clearSumFile() {
+        document.getElementById('sum-file-upload').value = '';
+        document.getElementById('sum-image-upload').value = '';
+        document.getElementById('sum-file-preview').style.display = 'none';
+    }
+
+    function copyToClipboard(id, isText = false) {
+        const el = document.getElementById(id);
+        let text = el.innerText || el.textContent;
+        navigator.clipboard.writeText(text);
+    }
+
+    function copyKeywords() {
+        // No longer needed
+    }
+
+    async function downloadSummaryPDF_New() {
+        if (!lastSummaryData.summary) return;
+        
+        showLoader("PREPARING PDF...");
+        try {
+            // Strip HTML for PDF
+            const cleanSummary = lastSummaryData.summary.replace(/<[^>]*>/g, "");
+            
+            const resp = await fetch("/download_summary_pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    summary: cleanSummary
+                })
+            });
+            
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "AutoFlow_Expert_Report.pdf";
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch(err) {
+            showError("PDF Download failed: " + err);
+        } finally {
+            hideLoader();
+        }
+    }
+
+    async function handleSummarize() {
+        const formData = new FormData();
+        
+        if (currentSumTab === 'text') {
+            const text = document.getElementById('sum-text-input').value;
+            if(!text.trim()) return showError("Please enter text to summarize.");
+            formData.append('text', text);
+        } else if (currentSumTab === 'file') {
+            const file = document.getElementById('sum-file-upload').files[0];
+            if(!file) return showError("Please upload a document file.");
+            formData.append('file', file);
+        } else if (currentSumTab === 'image') {
+            const file = document.getElementById('sum-image-upload').files[0];
+            if(!file) return showError("Please upload an image file.");
+            formData.append('file', file);
+        }
+
+        showLoader("DISTILLING KNOWLEDGE...");
+        try {
+            const resp = await fetch('/summarize', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if(data.success) {
+                lastSummaryData = {
+                    summary: data.summary
+                };
+
+                document.getElementById('summary-results').style.display = 'block';
+                
+                // Premium Structural Rendering
+                let summaryText = data.summary;
+                
+                // 1. Convert headers first (No-newline consumption to prevent line merging)
+                summaryText = summaryText.replace(/### (.*?)(?=\n|$)/g, '<div class="summary-section-title">$1</div>');
+                summaryText = summaryText.replace(/#### (.*?)(?=\n|$)/g, '<div class="summary-subheader">$1</div>');
+                summaryText = summaryText.replace(/CORE TAKEAWAYS:/g, '<div class="summary-core-box"><span class="summary-core-title">CORE TAKEAWAYS</span>');
+
+                let formattedHtml = summaryText
+                    .split('\n')
+                    .map(line => {
+                        line = line.trim();
+                        if (!line) return '';
+                        
+                        // If it's already a div (header), just return it
+                        if (line.startsWith('<div class="summary-section-title">') || 
+                            line.startsWith('<div class="summary-subheader">') ||
+                            line.startsWith('<div class="summary-core-box">')) return line;
+
+                        // 2. Clean EVERYTHING of stray AI clutter before processing points
+                        line = line.replace(/[*#]/g, '').trim();
+                        if (!line) return '';
+
+                        // 3. Handle Bullet points aggressively
+                        if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*')) {
+                            const bulletContent = line.replace(/^[-•*]\s*/, '').trim();
+                            return bulletContent ? `<div class="summary-point">${bulletContent}</div>` : '';
+                        }
+                        
+                        return `<p style="margin-bottom:12px; font-size:1.05rem;">${line}</p>`;
+                    })
+                    .join('');
+                
+                // Close CORE box if opened
+                if (formattedHtml.includes('summary-core-box') && !formattedHtml.includes('</div>', formattedHtml.indexOf('summary-core-box'))) {
+                    formattedHtml += '</div>';
+                }
+
+                document.getElementById('summary-content').innerHTML = formattedHtml;
+                
+                document.getElementById('summary-results').scrollIntoView({behavior:'smooth'});
+                
+                // Reset Chat
+                document.getElementById('chat-history').innerHTML = `<div style="color:var(--text-dim); text-align:center; margin-top:auto; margin-bottom:auto;">Ask questions about your uploaded document!</div>`;
+            } else {
+                showError("Summarization failed: " + data.error);
+            }
+        } catch(err) { showError("Summarization request failed: " + err); } finally { hideLoader(); }
+    }
+
+    async function sendChat() {
+        const input = document.getElementById('chat-input');
+        const query = input.value.trim();
+        if(!query) return;
+        
+        input.value = '';
+        input.disabled = true; // Prevent double submit
+        const history = document.getElementById('chat-history');
+        
+        if(history.innerHTML.includes('Ask questions about')) history.innerHTML = '';
+        
+        // Add User Message
+        history.innerHTML += `
+            <div style="align-self:flex-end; background:var(--accent-blue); color:#000; padding:12px 18px; border-radius:18px 18px 0 18px; max-width:85%; margin-bottom:10px; box-shadow: 0 5px 15px rgba(56, 189, 248, 0.2);">
+                <b>You:</b> ${query}
+            </div>`;
+        
+        // Add Thinking Placeholder
+        const tempId = 'thinking-' + Date.now();
+        history.innerHTML += `
+            <div id="${tempId}" class="chat-thinking">
+                Analyst is thinking <span style="display:flex; gap:3px; margin-left:8px;"><span class="pulse-dot"></span><span class="pulse-dot"></span><span class="pulse-dot"></span></span>
+            </div>`;
+        
+        history.scrollTop = history.scrollHeight;
+        
+        try {
+            const resp = await fetch('/chat_summary', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query}) 
+            });
+            const data = await resp.json();
+            
+            const thinkingBox = document.getElementById(tempId);
+            if(data.success) {
+                // Replace thinking with actual answer
+                thinkingBox.outerHTML = `
+                    <div style="align-self:flex-start; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:#e2e8f0; padding:15px 20px; border-radius:0 18px 18px 18px; max-width:90%; margin-bottom:10px; line-height:1.6; font-size:1rem;">
+                        ${data.answer}
+                    </div>`;
+            } else {
+                thinkingBox.innerHTML = `<span style="color:var(--accent-red);">Error: ${data.error}</span>`;
+            }
+        } catch(err) { 
+            const thinkingBox = document.getElementById(tempId);
+            if(thinkingBox) thinkingBox.innerHTML = `<span style="color:var(--accent-red);">Connection error.</span>`;
+        } finally {
+            input.disabled = false;
+            input.focus();
+            history.scrollTop = history.scrollHeight;
+        }
+    }
+</script>
+</body>
+</html>

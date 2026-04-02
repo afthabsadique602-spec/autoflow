@@ -1,0 +1,7 @@
+uploads/*
+*.csv
+*.xlsx
+*.pdf
+__pycache__/
+*.pyc
+.env
