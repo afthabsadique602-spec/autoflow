@@ -6,6 +6,13 @@
     <title>AutoFlow Professional</title>
     <link rel="manifest" href="/static/manifest.json?v=1775168000">
     <meta name="theme-color" content="#38bdf8">
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AutoFlow">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -882,10 +889,14 @@
                 deferredPrompt = null;
             });
         } else {
-            // Already installed / Manual Action guidance
-            showToast("AutoFlow is already recognized as an app! Check your Desktop or Address Bar (top right) to launch it.");
-            installBtnText.innerText = "Open as App";
-            // Flash color to indicate it's already installed
+            // Check if iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                showToast("iOS Installation: Tap the 'Share' button in Safari, then select 'Add to Home Screen'.");
+            } else {
+                showToast("AutoFlow is already recognized as an app! Check your Desktop or browser address bar to launch.");
+            }
+            installBtnText.innerText = "Open App";
             installBtn.style.borderColor = 'var(--accent-green)';
             installBtn.style.background = 'rgba(16, 185, 129, 0.2)';
         }
