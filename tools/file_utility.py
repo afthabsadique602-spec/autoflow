@@ -22,19 +22,20 @@ def preview_utility_file(filepath):
         if ext == '.csv':
             df = pd.read_csv(filepath, nrows=50, low_memory=False, encoding_errors='ignore')
             df.columns = df.columns.astype(str).str.strip()
-            df = df.where(pd.notnull(df), None)
+            df = df.fillna("")
             return {"type": "table", "columns": df.columns.tolist(), "data": df.to_dict(orient="records")}
         elif ext in ['.xls', '.xlsx']:
             xls = pd.ExcelFile(filepath)
             df = pd.read_excel(filepath, nrows=50, sheet_name=0)
             df.columns = df.columns.astype(str).str.strip()
-            df = df.where(pd.notnull(df), None)
+            df = df.fillna("")
             return {"type": "table", "columns": df.columns.tolist(), "data": df.to_dict(orient="records"), "sheet_names": xls.sheet_names}
         elif ext == '.json':
             with open(filepath, 'r') as f:
                 data = json.load(f)
                 if isinstance(data, list):
                     df = pd.DataFrame(data[:50])
+                    df = df.fillna("")
                     return {"type": "table", "columns": df.columns.tolist(), "data": df.to_dict(orient="records")}
                 else:
                     return {"type": "text", "content": json.dumps(data, indent=2)[:2000]}

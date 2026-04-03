@@ -38,29 +38,66 @@ OUTPUT_FOLDER = 'outputs'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024 # Adaptive limit allowed up to 500MB
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 # 10MB Limit
 
-def safe_load(path, is_excel=False):
-    if is_excel:
-        return pd.read_excel(path)
+def safe_load(file_source, is_excel=False):
+    """Industrial Strength Data Loader (Memory-First)"""
     try:
-        return pd.read_csv(path, encoding='utf-8', low_memory=False)
-    except:
-        try:
-            return pd.read_csv(path, encoding='latin1', low_memory=False)
-        except:
-            return pd.read_csv(path, encoding='cp1252', low_memory=False)
+        # Normalize Data Input
+        if isinstance(file_source, str) and file_source.startswith('http'):
+            # Extremely robust network fetching (bypasses pandas internal fetch limitations)
+            import requests
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(file_source, headers=headers, timeout=15)
+            resp.raise_for_status()
+            content = io.BytesIO(resp.content)
+            # Auto-detect if it's excel based on url extension if not forced
+            if '.xls' in file_source.lower() and not is_excel:
+                is_excel = True
+        elif hasattr(file_source, 'read'):
+            file_source.seek(0)
+            content = io.BytesIO(file_source.read())
+            file_source.seek(0)
+        else:
+            content = file_source
 
-def enforce_limits(df, max_rows=5000):
-    df = df.dropna(how='all')
-    df.columns = df.columns.astype(str).str.strip()
-    df = df.head(max_rows).copy()
-    for col in df.columns:
-        try:
-            df[col] = pd.to_numeric(df[col])
-        except Exception:
-            df[col] = df[col].astype(str)
-    return df
+        if is_excel:
+            try:
+                df = pd.read_excel(content, engine='openpyxl')
+            except Exception:
+                df = pd.read_excel(content, engine='xlrd')
+        else:
+            try:
+                df = pd.read_csv(content, encoding='utf-8', on_bad_lines='skip', low_memory=False)
+            except Exception:
+                if hasattr(content, 'seek'): content.seek(0)
+                df = pd.read_csv(content, encoding='latin1', on_bad_lines='skip', low_memory=False)
+
+        if df.empty: raise ValueError("File contains no data.")
+
+        # CLEAN: Strip whitespaces and force string columns
+        df.columns = df.columns.astype(str).str.strip()
+        df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+        
+        return df
+    except Exception as e:
+        print(f"[ENGINE ERROR] {str(e)}")
+        raise ValueError(f"CRITICAL: Unsupported or corrupted file format. ({str(e)})")
+
+def extract_pdf_text_robust(file_stream):
+    """Crash-Resistant PDF Extraction"""
+    try:
+        reader = PyPDF2.PdfReader(file_stream)
+        text = ""
+        for page in reader.pages:
+            extr = page.extract_text()
+            if extr: text += extr + "\n"
+        
+        if not text.strip():
+            return None, "No readable text found in PDF. Please ensure it's a searchable PDF."
+        return text.strip(), None
+    except Exception as e:
+        return None, f"PDF System Failure: {str(e)}"
 
 @app.route("/")
 def home():
@@ -73,33 +110,33 @@ def log_request_info():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    """Initial data profiling for Inspector."""
+    """Universal Analysis Endpoint (Robust)"""
     file = request.files.get("file")
     sheet_url = request.form.get("sheet_url")
     
-    if not file and not sheet_url:
-        return jsonify({"success": False, "error": "No data source"}), 400
-        
     try:
+        df = None
         if sheet_url:
             if "docs.google.com/spreadsheets" in sheet_url:
                 if "/edit" in sheet_url: sheet_url = sheet_url.split("/edit")[0] + "/export?format=csv"
             df = safe_load(sheet_url)
-        else:
-            filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(filepath)
-            df = safe_load(filepath, is_excel=not file.filename.endswith('.csv'))
-            
-        df = enforce_limits(df)
+        elif file:
+            filename = file.filename.lower()
+            if not any(filename.endswith(ext) for ext in ['.csv', '.xlsx', '.xls']):
+                return jsonify({"success": False, "error": "Unsupported data format. Please upload CSV or Excel."}), 400
+            df = safe_load(file, is_excel=not filename.endswith('.csv'))
+        
+        if df is None:
+            return jsonify({"success": False, "error": "No valid data source provided."}), 400
             
         analysis = analyze_data(df)
         return jsonify({
             "success": True, 
-            "analysis": analysis,
-            "temp_file": filepath if not sheet_url else None
+            "analysis": analysis
         })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+        print(f"[ANALYZE ERROR] {str(e)}")
+        return jsonify({"success": False, "error": "File processing failed", "details": str(e)}), 400
 
 def highlight_diff(df_orig, df_clean):
     """Generate HTML preview with highlighted changes using index alignment."""
@@ -172,8 +209,10 @@ def process_file():
         else:
             return jsonify({"success": False, "error": "No data source available"}), 400
             
-        df_orig = enforce_limits(df_orig)
-
+        # Protect backend memory from massive files
+        if len(df_orig) > 50000:
+            print(f"[PROCESS] Truncating file from {len(df_orig)} to 50000 rows.")
+            df_orig = df_orig.head(50000)
         # Parse Settings
         import json
         settings_raw = request.form.get("settings", "{}")
@@ -229,88 +268,43 @@ LATEST_INSIGHT = {}
 
 @app.route("/data_insight", methods=["POST"])
 def data_insight():
-    """Strategic analysis."""
+    """Strategic Analysis (Robust)"""
     file = request.files.get('file')
     sheet_url = request.form.get('sheet_url')
-    temp_file = request.form.get('temp_file')
     
     try:
-        print(f"[INSIGHT] SMART_HYBRID_AUTO_SCALE | Triggered")
-        processing_mode = "Standard"
-        
-        filepath = None
         df = None
-        if temp_file and os.path.exists(temp_file):
-            filepath = temp_file
-            df = safe_load(filepath, is_excel=not filepath.endswith('.csv'))
-        elif sheet_url and sheet_url.strip():
-             print(f"[INSIGHT] Using Cloud URL: {sheet_url}")
-             if not (sheet_url.startswith('http')):
-                 return jsonify({"success": False, "error": "Invalid URL. Must start with http://"}), 400
-             if "docs.google.com/spreadsheets" in sheet_url:
+        if sheet_url:
+            if "docs.google.com/spreadsheets" in sheet_url:
                 if "/edit" in sheet_url: sheet_url = sheet_url.split("/edit")[0] + "/export?format=csv"
-             # For URLs, we load then sample
-             df = safe_load(sheet_url)
-             if len(df) > 5000: df = df.sample(5000)
-             processing_mode = "Cloud Sync (Optimized)"
+            df = safe_load(sheet_url)
         elif file:
-            filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(filepath)
+             filename = file.filename.lower()
+             if not any(filename.endswith(ext) for ext in ['.csv', '.xlsx', '.xls']):
+                return jsonify({"success": False, "error": "Unsupported data format. Please upload CSV or Excel."}), 400
+             df = safe_load(file, is_excel=not filename.endswith('.csv'))
         
-        if df is None and not filepath:
-            print("[INSIGHT] ERROR: No valid data source")
-            return jsonify({"success": False, "error": "No valid data source provided."}), 400
-
-        # ADAPTIVE LOADING STRATEGY for local files
         if df is None:
-            file_size = os.path.getsize(filepath) / (1024 * 1024) # MB
-            print(f"[INSIGHT] File Size: {file_size:.2f} MB")
+            return jsonify({"success": False, "error": "No valid data source provided."}), 400
             
-            processing_mode = "Standard"
-            if filepath.endswith('.csv'):
-                if file_size < 10:
-                    print("[INSIGHT] Strategy: Full Load")
-                    df = safe_load(filepath)
-                elif file_size < 100:
-                    print("[INSIGHT] Strategy: Proximity Sampled Load")
-                    df = safe_load(filepath).sample(5000)
-                    processing_mode = "Optimized (Proximity Sampled)"
-                else:
-                    print("[INSIGHT] Strategy: Deep Chunk Streaming")
-                    chunks = pd.read_csv(filepath, chunksize=5000, encoding='latin1', low_memory=True)
-                    df = next(chunks) # Use first chunk for deep insight
-                    processing_mode = "Performance (Chunk Streamed)"
-            else: # Excel
-                 df = safe_load(filepath, is_excel=True)
+        # Adaptive sampling for insight context (keep performance high)
+        if len(df) > 10000:
+            df = df.sample(10000)
+            processing_mode = "Performance (Sampled)"
+        else:
+            processing_mode = "Full Precision"
 
-        print(f"[INSIGHT] Stage: Start Data Analysis | Mode: {processing_mode}")
         res = generate_insights(df)
-        res["processing_mode"] = processing_mode # Pass to UI
-        print(f"[INSIGHT] Stage: Analysis Complete | Rows used: {len(df)}")
-        
-        preview = res.get("preview", [])
-        print("DEBUG PREVIEW:", preview[:2] if len(preview) >= 2 else preview)
-        print("DEBUG COLUMNS:", df.columns.tolist())
-        
-        red_flags = []
-        if df.isnull().sum().sum() > 0:
-            red_flags.append(f"Missing values: {int(df.isnull().sum().sum())}")
-        if df.duplicated().sum() > 0:
-            red_flags.append(f"Duplicate rows: {int(df.duplicated().sum())}")
-        if len(df) >= 3000:
-            red_flags.append("Large dataset — performance optimized mode enabled")
-            
-        response_data = res.copy()
+        res["success"] = True
+        res["processing_mode"] = processing_mode
         
         global LATEST_INSIGHT
-        LATEST_INSIGHT = response_data
+        LATEST_INSIGHT = res
         
-        return jsonify(response_data)
+        return jsonify(res)
     except Exception as e:
-        import traceback
         print(f"[INSIGHT ERROR] {str(e)}")
-        print(traceback.format_exc())
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": "Insight engine failed", "details": str(e)}), 400
 
 @app.route("/custom_chart", methods=["POST"])
 def custom_chart():
@@ -336,6 +330,7 @@ global LATEST_GENERATED_SUMMARY
 LATEST_SUMMARY_DOC = ""
 @app.route("/summarize", methods=["POST"])
 def summarize():
+    """Expert Summary Route (Robust)"""
     global LATEST_SUMMARY_DOC
     global LATEST_GENERATED_SUMMARY
     try:
@@ -346,39 +341,34 @@ def summarize():
 
         if url:
              try:
-                 resp = requests.get(url, timeout=10)
+                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+                 resp = requests.get(url, headers=headers, timeout=10)
                  if resp.status_code == 200:
                      soup = BeautifulSoup(resp.text, 'html.parser')
-                     # Remove script and style elements
-                     for script in soup(["script", "style"]):
-                         script.extract()
+                     for script in soup(["script", "style"]): script.extract()
                      extracted_text = soup.get_text(separator=' ', strip=True)
+                 else:
+                     return jsonify({"success": False, "error": f"Failed to fetch content from URL (HTTP {resp.status_code})" })
              except Exception as e:
-                 print(f"URL extraction failed: {e}")
-                 return jsonify({"success": False, "error": f"Could not extract content from URL: {str(e)}"})
+                 return jsonify({"success": False, "error": "URL summarize failed", "details": str(e)})
 
         elif file:
             filename = file.filename.lower()
-            if filename.endswith('.txt'):
-                extracted_text = file.read().decode('utf-8', errors='ignore')
-            elif filename.endswith('.csv'):
-                df = safe_load(file)
-                extracted_text = df.head(100).to_string()
-            elif filename.endswith('.xlsx'):
-                df = safe_load(file, is_excel=True)
-                extracted_text = df.head(100).to_string()
-            elif filename.endswith('.pdf'):
-                reader = PyPDF2.PdfReader(file)
-                for page in reader.pages:
-                    extracted_text += page.extract_text() or ""
+            if filename.endswith('.pdf'):
+                extracted_text, err = extract_pdf_text_robust(file)
+                if err: return jsonify({"success": False, "error": err})
             elif filename.endswith('.docx'):
                 doc = docx.Document(file)
-                for para in doc.paragraphs:
-                    extracted_text += para.text + "\n"
+                extracted_text = "\n".join([para.text for para in doc.paragraphs])
+            elif filename.endswith('.txt'):
+                extracted_text = file.read().decode('utf-8', errors='ignore')
+            elif filename.endswith(('.csv', '.xlsx', '.xls')):
+                df = safe_load(file, is_excel=not filename.endswith('.csv'))
+                extracted_text = df.head(500).to_string() # Context sample
 
         final_text = text if (text and text.strip()) else extracted_text
         if not final_text or len(final_text.strip()) == 0:
-            return jsonify({"success": False, "error": "No readable content found"})
+            return jsonify({"success": False, "error": "No readable content found for summarization."})
 
         # Advanced Structured Prompting
         system_prompt = (
@@ -407,7 +397,7 @@ STRICT VISUAL ARCHITECTURE:
 Make the language professional, authoritative, and deeply informative.
 
 CONTENT:
-{final_text}
+{final_text[:15000]}
 """
         response = call_llm([
             {"role": "system", "content": system_prompt},
@@ -434,9 +424,8 @@ CONTENT:
             "summary": summary
         })
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        return jsonify({"success": False, "error": str(e)})
+        print(f"[SUMMARIZER ERROR] {str(e)}")
+        return jsonify({"success": False, "error": "Expert Summarizer failed", "details": str(e)}), 400
 
 @app.route("/chat_summary", methods=["POST"])
 def chat_summary():
@@ -627,15 +616,39 @@ def download_insight_pdf():
 @app.route("/file_utility/preview", methods=["POST"])
 def utility_preview():
     file = request.files.get("file")
-    if not file: return jsonify({"success": False, "error": "No file uploaded"}), 400
+    sheet_url = request.form.get("sheet_url")
+    
+    if not file and not sheet_url: 
+        return jsonify({"success": False, "error": "No file or URL provided"}), 400
+        
     try:
-        path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(path)
+        path = None
+        if sheet_url:
+            import requests, uuid
+            headers = {"User-Agent": "Mozilla/5.0"}
+            if "docs.google.com/spreadsheets" in sheet_url and "/edit" in sheet_url:
+                sheet_url = sheet_url.split("/edit")[0] + "/export?format=csv"
+            
+            resp = requests.get(sheet_url, headers=headers, timeout=15)
+            resp.raise_for_status()
+            
+            fname = sheet_url.split('/')[-1].split('?')[0]
+            if not fname or not any(fname.endswith(ext) for ext in ['.csv', '.xlsx', '.xls']):
+                fname = f"cloud_file_{uuid.uuid4().hex[:6]}.csv"
+                
+            path = os.path.join(UPLOAD_FOLDER, fname)
+            with open(path, 'wb') as f:
+                f.write(resp.content)
+        elif file:
+            path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(path)
+            
         stats = get_file_stats(path)
         preview = preview_utility_file(path)
         return jsonify({"success": True, "stats": stats, "preview": preview, "temp_file": path})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+        print(f"[UTILITY PREVIEW ERROR] {str(e)}")
+        return jsonify({"success": False, "error": f"Failed to load file: {str(e)}"}), 400
 
 @app.route("/file_utility/convert", methods=["POST"])
 def utility_convert():

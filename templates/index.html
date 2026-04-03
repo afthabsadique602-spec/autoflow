@@ -920,15 +920,23 @@
     }
     function hideLoader() { document.getElementById('global-loader').style.display = 'none'; }
     
-    function showError(msg) {
+    function showError(msg, details = "") {
         document.getElementById('loader-text').innerText = "PROCESSING..."; // reset
-        hideLoader(); // force hide if an error occurs while loader active
+        hideLoader();
         const modal = document.getElementById('alert-modal');
         const textElement = document.getElementById('alert-modal-text');
         
-        // Handle empty messages with a fallback
-        textElement.innerText = msg && msg.trim() ? msg : "An unspecified system event occurred. Please check your data source and retry.";
+        let displayMsg = msg || "An unspecified system event occurred.";
+        if (details) {
+            displayMsg += `\n\n[Details: ${details}]`;
+        }
         
+        // Final fallback for the specific "string did not match" browser error
+        if (displayMsg.includes("match the expected pattern") || displayMsg.includes("Failed to fetch")) {
+            displayMsg = "Unsupported or corrupted file. Please upload a valid CSV, Excel, or PDF.";
+        }
+
+        textElement.innerText = displayMsg;
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('active'), 10);
     }
@@ -954,12 +962,13 @@
         processUtilityFile(input.files[0]);
     }
 
-    async function processUtilityFile(file) {
-        if(!file) return;
+    async function processUtilityFile(file, url=null) {
+        if(!file && !url) return;
         
         showLoader("PRE-COMPUTING FILE STRATEGY...");
         const formData = new FormData();
-        formData.append('file', file);
+        if (file) formData.append('file', file);
+        if (url) formData.append('sheet_url', url);
         
         try {
             const resp = await fetch('/file_utility/preview', { method: 'POST', body: formData });
@@ -970,7 +979,7 @@
                 renderUtilityPreview(data);
                 showToast("File strategist ready");
             } else {
-                showError(data.error);
+                showError(data.error || "Preview failed");
             }
         } catch(err) {
             showError("Engagement failed: " + err.message);
@@ -1004,51 +1013,8 @@
         if(!urlInput) return showError("Please enter a valid file URL");
         if(!urlInput.startsWith('http://') && !urlInput.startsWith('https://')) return showError("URL must start with http:// or https://");
         
-        let fname = "downloaded_file";
-        let isSheets = urlInput.includes('docs.google.com/spreadsheets/');
-        
-        if (isSheets) {
-            const sheetMatch = urlInput.match(/\/d\/([a-zA-Z0-9-_]+)/);
-            if(sheetMatch && sheetMatch[1]) {
-                const fileId = sheetMatch[1];
-                urlInput = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=csv`;
-                fname = "google_sheet.csv";
-            } else {
-                return showError("Invalid Google Sheets URL");
-            }
-        } else {
-            const lowerUrl = urlInput.split('?')[0].toLowerCase();
-            if(lowerUrl.endsWith('.csv')) fname += ".csv";
-            else if(lowerUrl.endsWith('.xlsx')) fname += ".xlsx";
-            else if(lowerUrl.endsWith('.xls')) fname += ".xls";
-            else {
-                return showError("Only CSV, Excel, and Google Sheets files supported");
-            }
-        }
-        
-        showLoader("Fetching file...");
-        try {
-            const resp = await fetch(urlInput);
-            if(!resp.ok) {
-                if (isSheets) throw new Error("This Google Sheet is not publicly accessible");
-                throw new Error(`HTTP error! status: ${resp.status}`);
-            }
-            
-            const blob = await resp.blob();
-            const file = new File([blob], isSheets ? fname : (urlInput.split('/').pop().split('?')[0] || fname), { type: blob.type || (fname.endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') });
-            
-            await processUtilityFile(file);
-        } catch(err) {
-            if (isSheets && err.message.includes("publicly accessible")) {
-               showError("This Google Sheet is not publicly accessible");
-            } else if (isSheets) {
-               showError("Unable to load spreadsheet");
-            } else {
-               showError("Unable to fetch file. Check link or permissions (CORS restriction)");
-            }
-        } finally {
-            hideLoader();
-        }
+        // Delegate fetching safely to the backend to bypass restrictive CORS policies
+        await processUtilityFile(null, urlInput);
     }
 
     function renderUtilityPreview(data) {
@@ -1509,12 +1475,10 @@
                 // PDF generation removed
                 document.getElementById('clean-results-stage').scrollIntoView({behavior:'smooth'});
             } else {
-                console.error("[PROCESS] Data success false:", data.error);
-                showError("Error: " + data.error);
+                showError("Cleaning Engine Failure", data.error || data.details || "Internal Process Error");
             }
         } catch(err) { 
-            console.error("[PROCESS] Fetch catch:", err);
-            showError("Cleaning failed: " + err.message + "\n\nCheck console for details."); 
+            showError("Unsupported or corrupted file. Please upload a valid CSV, Excel, or PDF.", err.message); 
         } finally { hideLoader(); }
     }
 
@@ -1565,12 +1529,10 @@
                 document.getElementById('insight-results').scrollIntoView({behavior:'smooth'});
                 showToast("Dataset context synthesized successfully.");
             } else {
-                showError("Analysis engine failed: " + (data.error || "Internal Error"));
+                showError("Analysis engine failed: " + (data.error || "Internal Error"), data.details || "");
             }
         } catch(err) { 
-            console.error("[INSIGHT] Network/Server Error:", err);
-            const advisory = (err.message && err.message.toLowerCase().includes('fetch')) ? "Server overloaded or file too large. Try a smaller dataset." : err.message;
-            showError("Analysis request failed: " + advisory); 
+            showError("Unsupported or corrupted file. Please upload a valid CSV, Excel, or PDF.", err.message); 
         } finally { 
             hideLoader(); 
             btn.disabled = false;
@@ -1966,16 +1928,11 @@
             const resp = await fetch('/summarize', { method: 'POST', body: formData });
             const data = await resp.json();
             if(data.success) {
-                lastSummaryData = {
-                    summary: data.summary
-                };
+                lastSummaryData = { summary: data.summary };
 
                 document.getElementById('summary-results').style.display = 'block';
                 
-                // Premium Structural Rendering
                 let summaryText = data.summary;
-                
-                // 1. Convert headers first (No-newline consumption to prevent line merging)
                 summaryText = summaryText.replace(/### (.*?)(?=\n|$)/g, '<div class="summary-section-title">$1</div>');
                 summaryText = summaryText.replace(/#### (.*?)(?=\n|$)/g, '<div class="summary-subheader">$1</div>');
                 summaryText = summaryText.replace(/CORE TAKEAWAYS:/g, '<div class="summary-core-box"><span class="summary-core-title">CORE TAKEAWAYS</span>');
@@ -1985,41 +1942,36 @@
                     .map(line => {
                         line = line.trim();
                         if (!line) return '';
-                        
-                        // If it's already a div (header), just return it
                         if (line.startsWith('<div class="summary-section-title">') || 
                             line.startsWith('<div class="summary-subheader">') ||
                             line.startsWith('<div class="summary-core-box">')) return line;
 
-                        // 2. Clean EVERYTHING of stray AI clutter before processing points
                         line = line.replace(/[*#]/g, '').trim();
                         if (!line) return '';
 
-                        // 3. Handle Bullet points aggressively
                         if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*')) {
                             const bulletContent = line.replace(/^[-•*]\s*/, '').trim();
                             return bulletContent ? `<div class="summary-point">${bulletContent}</div>` : '';
                         }
-                        
                         return `<p style="margin-bottom:12px; font-size:1.05rem;">${line}</p>`;
                     })
                     .join('');
                 
-                // Close CORE box if opened
                 if (formattedHtml.includes('summary-core-box') && !formattedHtml.includes('</div>', formattedHtml.indexOf('summary-core-box'))) {
                     formattedHtml += '</div>';
                 }
 
                 document.getElementById('summary-content').innerHTML = formattedHtml;
-                
                 document.getElementById('summary-results').scrollIntoView({behavior:'smooth'});
                 
                 // Reset Chat
                 document.getElementById('chat-history').innerHTML = `<div style="color:var(--text-dim); text-align:center; margin-top:auto; margin-bottom:auto;">Ask questions about your uploaded document!</div>`;
             } else {
-                showError("Summarization failed: " + data.error);
+                showError("Summarization Failed", data.error || data.details || "AI Analysis unavailable");
             }
-        } catch(err) { showError("Summarization request failed: " + err); } finally { hideLoader(); }
+        } catch(err) { 
+            showError("Unsupported or corrupted file. Please upload a valid CSV, Excel, or PDF.", err.message); 
+        } finally { hideLoader(); }
     }
 
     async function sendChat() {
