@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-import PyPDF2
+import pypdf
 import docx
 from collections import Counter
 import re
@@ -87,7 +87,7 @@ def safe_load(file_source, is_excel=False):
 def extract_pdf_text_robust(file_stream):
     """Crash-Resistant PDF Extraction"""
     try:
-        reader = PyPDF2.PdfReader(file_stream)
+        reader = pypdf.PdfReader(file_stream)
         text = ""
         for page in reader.pages:
             extr = page.extract_text()
@@ -424,8 +424,11 @@ CONTENT:
             "summary": summary
         })
     except Exception as e:
-        print(f"[SUMMARIZER ERROR] {str(e)}")
-        return jsonify({"success": False, "error": "Expert Summarizer failed", "details": str(e)}), 400
+        import traceback
+        trace = traceback.format_exc()
+        print(f"[SUMMARIZER ERROR] {trace}")
+        # Passing str(e) into the error field so the UI explicitly warns the user of the Python exception
+        return jsonify({"success": False, "error": f"Summarizer crash: {str(e)}", "details": trace}), 400
 
 @app.route("/chat_summary", methods=["POST"])
 def chat_summary():

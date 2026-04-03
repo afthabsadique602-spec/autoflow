@@ -3,7 +3,7 @@ import pandas as pd
 import json
 import time
 from fpdf import FPDF
-import PyPDF2
+import pypdf
 
 def get_file_stats(filepath):
     """Get basic file metadata."""
@@ -44,7 +44,7 @@ def preview_utility_file(filepath):
                 return {"type": "text", "content": f.read(3000)}
         elif ext == '.pdf':
             with open(filepath, 'rb') as f:
-                reader = PyPDF2.PdfReader(f)
+                reader = pypdf.PdfReader(f)
                 text = ""
                 for page in reader.pages[:3]:
                     text += page.extract_text() + "\n"

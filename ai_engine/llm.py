@@ -6,9 +6,9 @@ def get_groq_client():
     if not key: return None
     return Groq(api_key=key)
 
-def call_llm(messages, model="llama-3.3-70b-versatile", temp=0.5):
+def call_llm(messages, model="llama-3.1-8b-instant", temp=0.5):
     client = get_groq_client()
-    if not client: return None
+    if not client: return "Warning LLM API Error: GROQ_API_KEY is missing from environment."
     try:
         completion = client.chat.completions.create(
             model=model,
@@ -19,4 +19,4 @@ def call_llm(messages, model="llama-3.3-70b-versatile", temp=0.5):
         return completion.choices[0].message.content
     except Exception as e:
         print(f"LLM Error: {e}")
-        return None
+        return f"Warning LLM API Error: {str(e)}"

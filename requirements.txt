@@ -5,7 +5,7 @@ numpy
 openpyxl
 python-dotenv
 flask-cors
-PyPDF2
+pypdf
 python-docx
 groq
 fpdf
