@@ -5,10 +5,11 @@ numpy
 openpyxl
 python-dotenv
 flask-cors
-pypdf
+PyPDF2
 python-docx
 groq
 fpdf
 requests
 beautifulsoup4
 matplotlib
+pycryptodome
